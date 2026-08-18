@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fietsen op het Gouwplein</title>
+<meta name="description" content="Automatische fietstelling op het Gouwplein in Weesp.">
+<style>
+  :root {
+    --bg: #14161a; --panel: #1c1f25; --line: #2a2f37;
+    --ink: #e8eaed; --dim: #9aa3ad; --accent: #4ea8de; --accent-soft: #2d5f7f;
+  }
+  @media (prefers-color-scheme: light) {
+    :root {
+      --bg: #f6f7f9; --panel: #fff; --line: #e2e6ea;
+      --ink: #1a1d21; --dim: #667080; --accent: #1f7fb8; --accent-soft: #bcdcef;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 2rem 1.25rem 3rem; background: var(--bg); color: var(--ink);
+    font: 16px/1.55 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  main { max-width: 860px; margin: 0 auto; }
+  h1 { font-size: 1.5rem; margin: 0 0 .25rem; letter-spacing: -.01em; }
+  .sub { color: var(--dim); margin: 0 0 2rem; font-size: .95rem; }
+  h2 { font-size: .8rem; text-transform: uppercase; letter-spacing: .08em;
+       color: var(--dim); font-weight: 600; margin: 2.5rem 0 .9rem; }
+
+  .cards { display: grid; gap: .75rem; grid-template-columns: repeat(3, 1fr); }
+  @media (max-width: 560px) { .cards { grid-template-columns: 1fr; } }
+  .card { background: var(--panel); border: 1px solid var(--line);
+          border-radius: 10px; padding: 1rem 1.1rem; }
+  .card .n { font-size: 2rem; font-weight: 650; letter-spacing: -.02em;
+             font-variant-numeric: tabular-nums; }
+  .card .l { color: var(--dim); font-size: .85rem; margin-top: .1rem; }
+
+  .chart { background: var(--panel); border: 1px solid var(--line);
+           border-radius: 10px; padding: 1.1rem 1.1rem .8rem; overflow-x: auto; }
+  .bars { display: flex; align-items: flex-end; gap: 3px; height: 160px; min-width: min-content; }
+  .bar { flex: 1 1 0; min-width: 12px; display: flex; flex-direction: column;
+         justify-content: flex-end; height: 100%; }
+  .bar i { display: block; background: var(--accent); border-radius: 3px 3px 0 0;
+           min-height: 2px; transition: background .15s; }
+  .bar:hover i { background: var(--ink); }
+  .bar b { font-weight: 400; font-size: .65rem; color: var(--dim); text-align: center;
+           margin-top: .35rem; font-variant-numeric: tabular-nums; }
+  .empty { color: var(--dim); font-size: .9rem; padding: 2rem 0; text-align: center; }
+
+  footer { margin-top: 2.5rem; padding-top: 1.2rem; border-top: 1px solid var(--line);
+           color: var(--dim); font-size: .82rem; }
+  footer p { margin: .4rem 0; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Fietsen op het Gouwplein</h1>
+  <p class="sub">Automatische telling, elk uur bijgewerkt.</p>
+
+  <div class="cards">
+    <div class="card"><div class="n" id="t-today">–</div><div class="l">vandaag</div></div>
+    <div class="card"><div class="n" id="t-week">–</div><div class="l">deze week</div></div>
+    <div class="card"><div class="n" id="t-month">–</div><div class="l">deze maand</div></div>
+  </div>
+
+  <h2>Gemiddeld per uur van de dag</h2>
+  <div class="chart"><div class="bars" id="c-hour"></div></div>
+
+  <h2>Laatste 14 dagen</h2>
+  <div class="chart"><div class="bars" id="c-day"></div></div>
+
+  <footer>
+    <p id="updated"></p>
+    <p>Geteld op de nabije rijbaan met een camera en objectherkenning. De teller
+       mist naar schatting 17–23% van de passages, dus de werkelijke aantallen
+       liggen wat hoger.</p>
+  </footer>
+</main>
+
+<script>
+const nf = new Intl.NumberFormat('nl-NL');
+
+function bars(el, items, fmt) {
+  if (!items.length) { el.innerHTML = '<div class="empty">Nog geen gegevens.</div>'; return; }
+  const max = Math.max(...items.map(i => i.v), 1);
+  el.innerHTML = items.map(i =>
+    `<div class="bar" title="${i.title}">` +
+      `<i style="height:${(i.v / max * 100).toFixed(1)}%"></i>` +
+      `<b>${fmt(i)}</b>` +
+    `</div>`
+  ).join('');
+}
+
+fetch('data.json?' + Date.now())
+  .then(r => r.json())
+  .then(d => {
+    for (const k of ['today', 'week', 'month'])
+      document.getElementById('t-' + k).textContent = nf.format(d.totals?.[k] ?? 0);
+
+    const log = d.hourly || [];
+
+    // Hour-of-day: mean over every day that reported this hour.
+    const sum = Array(24).fill(0), cnt = Array(24).fill(0);
+    for (const e of log) { sum[e.h] += e.n; cnt[e.h]++; }
+    bars(document.getElementById('c-hour'), Array.from({length: 24}, (_, h) => {
+      const v = cnt[h] ? sum[h] / cnt[h] : 0;
+      return { v, title: `${String(h).padStart(2,'0')}:00–${String(h+1).padStart(2,'0')}:00 — gem. ${v.toFixed(1)}`,
+               h };
+    }), i => i.h % 3 === 0 ? String(i.h).padStart(2, '0') : '');
+
+    // Daily totals, most recent 14 days that have data.
+    const byDay = new Map();
+    for (const e of log) {
+      const k = e.ts.slice(0, 10);
+      byDay.set(k, (byDay.get(k) || 0) + e.n);
+    }
+    const days = [...byDay.entries()].sort().slice(-14);
+    bars(document.getElementById('c-day'), days.map(([k, v]) => ({
+      v, title: `${k} — ${nf.format(v)} fietsen`,
+      lbl: new Date(k + 'T12:00').toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' })
+    })), i => i.lbl);
+
+    document.getElementById('updated').textContent = d.updated
+      ? 'Laatst bijgewerkt: ' + new Date(d.updated).toLocaleString('nl-NL',
+          { dateStyle: 'medium', timeStyle: 'short' })
+      : 'Nog niet bijgewerkt.';
+  })
+  .catch(e => {
+    document.getElementById('updated').textContent = 'Gegevens konden niet geladen worden.';
+    console.error(e);
+  });
+</script>
+</body>
+</html>

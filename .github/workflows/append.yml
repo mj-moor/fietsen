@@ -1,0 +1,38 @@
+name: Append bike counts
+
+# Home Assistant fires a repository_dispatch once an hour. Doing the
+# read-modify-write here rather than in HA keeps the awkward part (JSON
+# surgery, base64, blob SHAs) out of Jinja templates.
+on:
+  repository_dispatch:
+    types: [bike-counts]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+# Serialise writes. Two dispatches landing together would otherwise race on
+# data.json and one push would be rejected.
+concurrency:
+  group: append-counts
+  cancel-in-progress: false
+
+jobs:
+  append:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Append reading
+        env:
+          PAYLOAD: ${{ toJSON(github.event.client_payload) }}
+        run: python3 .github/scripts/append.py
+
+      - name: Commit
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data.json
+          git diff --staged --quiet && echo "no change" && exit 0
+          git commit -m "counts $(date -u +%FT%TZ)"
+          git push
