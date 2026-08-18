@@ -45,6 +45,11 @@
   .card .l { color:var(--dim); font-size:.8rem; margin-top:.05rem; }
   .card .x { color:var(--faint); font-size:.73rem; margin-top:.3rem;
              font-variant-numeric:tabular-nums; min-height:1em; }
+  .info { appearance:none; margin-left:.32rem; padding:0; width:14px; height:14px;
+          border:1px solid var(--line); border-radius:50%; background:transparent;
+          color:var(--faint); font:inherit; font-size:.62rem; line-height:1;
+          cursor:help; vertical-align:.08em; }
+  .info:hover, .info:focus-visible { color:var(--ink); border-color:var(--accent); }
 
   .bar-controls { display:flex; flex-wrap:wrap; gap:.6rem; align-items:center;
                   margin:0 0 .9rem; }
@@ -105,6 +110,7 @@
             color:var(--faint); font-size:.78rem; margin:.7rem 0 0; }
   .legend i { display:inline-block; width:11px; height:11px; border-radius:3px;
               vertical-align:-1px; margin-right:.35rem; }
+  .legend .apart { margin-left:.4rem; padding-left:1rem; border-left:1px solid var(--line); }
   .scale { display:inline-flex; height:9px; width:74px; border-radius:3px; overflow:hidden; }
   .scale span { flex:1; }
 
@@ -128,18 +134,20 @@
 <body>
 <main>
   <h1>Fietsen op het Gouwplein</h1>
-  <p class="sub">Automatische telling, elk uur bijgewerkt.</p>
+  <p class="sub">Automatisch geteld &middot; elk uur bijgewerkt</p>
 
   <div class="cards">
     <div class="card q lead" id="k-all"><div class="n" id="t-all">–</div>
-      <div class="l">sinds de start</div><div class="x" id="x-all"></div></div>
-    <div class="card q" id="k-today"><div class="n" id="t-today">–</div><div class="l">vandaag</div>
+      <div class="l">Sinds de start<button type="button" class="info" id="i-all"
+        aria-label="Wat telt mee bij sinds de start?">?</button></div>
+      <div class="x" id="x-all"></div></div>
+    <div class="card q" id="k-today"><div class="n" id="t-today">–</div><div class="l">Vandaag</div>
       <div class="x" id="x-today"></div></div>
-    <div class="card q" id="k-week"><div class="n" id="t-week">–</div><div class="l">deze week</div>
+    <div class="card q" id="k-week"><div class="n" id="t-week">–</div><div class="l">Deze week</div>
       <div class="x" id="x-week"></div></div>
-    <div class="card q" id="k-month"><div class="n" id="t-month">–</div><div class="l">deze maand</div>
+    <div class="card q" id="k-month"><div class="n" id="t-month">–</div><div class="l">Deze maand</div>
       <div class="x" id="x-month"></div></div>
-    <div class="card"><div class="n" id="t-avg">–</div><div class="l">gem. per hele dag</div></div>
+    <div class="card"><div class="n" id="t-avg">–</div><div class="l">Gemiddeld per dag</div></div>
   </div>
 
   <section>
@@ -158,16 +166,16 @@
     </div>
     <div class="chart" id="c-main"></div>
     <div class="legend">
-      <span><i style="background:var(--accent)"></i>doordeweeks</span>
-      <span><i style="background:var(--weekend)"></i>weekend</span>
-      <span><i style="background:var(--accent);opacity:.42"></i>onvolledige dag</span>
-      <span id="lg-ghost" hidden>‑ ‑ ‑ mediaan van alle dagen</span>
+      <span><i style="background:var(--accent)"></i>Doordeweeks</span>
+      <span><i style="background:var(--weekend)"></i>Weekend</span>
+      <span><i style="background:var(--accent);opacity:.42"></i>Onvolledige dag</span>
+      <span class="apart" id="lg-ghost" hidden>‑ ‑ ‑ Mediaan</span>
     </div>
   </section>
 
   <section>
     <h2>Alle dagen, uur voor uur</h2>
-    <p class="hint">Elke rij is een dag. Klik een rij om die dag te openen.</p>
+    <p class="hint">Klik op een dag voor details.</p>
     <div class="chart" id="c-heat"></div>
     <div class="legend">
       <span>minder
@@ -177,20 +185,22 @@
   </section>
 
   <section>
-    <h2>Uur van de dag</h2>
-    <p class="hint">Mediaan met spreiding — de band toont de middelste helft van de dagen,
-      de lichte vlek het volledige bereik.</p>
+    <h2>Typische drukte per uur</h2>
+    <p class="hint">De lijn toont een typische dag. De donkere band laat de gebruikelijke
+      variatie zien; de lichte band laat ook de uitzonderlijk rustige en drukke dagen zien.</p>
     <div class="chart" id="c-hour"></div>
   </section>
 
   <footer>
-    <p id="updated"></p>
+    <h2>Over de telling</h2>
+    <p>De camera telt fietsers die hier langsrijden. Beelden die niet automatisch
+      herkend worden, controleer ik handmatig.</p>
+    <p>Alleen de dichtstbijzijnde rijbaan wordt geteld en de camera mist naar schatting
+      17–23% van de passages, dus in werkelijkheid rijden er meer. Dat verschil is elke
+      dag ongeveer even groot, waardoor dagen en uren onderling goed vergelijkbaar blijven.</p>
     <p id="gap"></p>
-    <p>Geteld met een camera en objectherkenning, alleen op de nabije rijbaan.
-      De detector mist naar schatting 17–23% van de passages, dus het werkelijke
-      aantal ligt hoger. Die ondertelling is constant, waardoor dagen en uren
-      onderling goed vergelijkbaar blijven.</p>
     <p id="caveat"></p>
+    <p id="updated"></p>
   </footer>
 </main>
 
@@ -205,6 +215,8 @@ const el = (n, a) => { const e = document.createElementNS(SVG, n);
 const DAYFMT  = new Intl.DateTimeFormat('nl-NL', { weekday:'short', day:'numeric', month:'short' });
 const LONGFMT = new Intl.DateTimeFormat('nl-NL', { weekday:'long', day:'numeric', month:'long' });
 const MONFMT  = new Intl.DateTimeFormat('nl-NL', { month:'long', year:'numeric' });
+const SHORTFMT = new Intl.DateTimeFormat('nl-NL', { day:'numeric', month:'short' });
+const FULLFMT = new Intl.DateTimeFormat('nl-NL', { day:'numeric', month:'long', year:'numeric' });
 const iso  = d => d.toISOString().slice(0, 10);
 const mid  = k => new Date(k + 'T12:00:00');
 const addD = (k, n) => { const d = mid(k); d.setDate(d.getDate() + n); return iso(d); };
@@ -324,7 +336,7 @@ function bandChart(host, stats, opts = {}) {
       hit.addEventListener('pointermove', e => showTip(
         `<b>${String(s.h).padStart(2,'0')}:00 – ${String((s.h+1)%24).padStart(2,'0')}:00</b>` +
         `mediaan <span class="v">${s.med}</span> fietsen<br>` +
-        `<span class="m">middelste helft ${s.q1}–${s.q3} · bereik ${s.min}–${s.max}</span><br>` +
+        `<span class="m">meestal ${s.q1}–${s.q3} · uitschieters ${s.min}–${s.max}</span><br>` +
         `<span class="m">over ${s.n} volledige dagen</span>`,
         e.clientX, host.getBoundingClientRect().top + f.y(s.max)));
       g.appendChild(hit);
@@ -346,10 +358,30 @@ function heatmap(host, days, byDay, onPick) {
   const draw = () => {
     host.innerHTML = '';
     const W = host.clientWidth || 600;
-    const padL = 52, padT = 16, padB = 4, rowH = 17, gap = 2;
-    const cw = (W - padL - 6) / 24;
+    const padT = 16, padB = 4, rowH = 17, gap = 2;
     const H = padT + days.length * rowH + padB + 6;
     const svg = el('svg', { width:W, height:H, viewBox:`0 0 ${W} ${H}` });
+    host.appendChild(svg);
+
+    // The gutter is measured rather than guessed: a fixed width clipped the
+    // longer labels ("wo 13 aug") on the left. Below ~30% of the chart the
+    // weekday is dropped instead of eating into the grid.
+    const ruler = el('text', { class:'hm-lbl', visibility:'hidden' });
+    svg.appendChild(ruler);
+    const widest = strs => {
+      ruler.textContent = strs.reduce((a, b) => b.length > a.length ? b : a, '');
+      return ruler.getComputedTextLength();
+    };
+    const maxGutter = Math.max(40, W * 0.3);
+    let labels = days.map(k => DAYFMT.format(mid(k)).replace(/\./g, ''));
+    let padL = widest(labels) + 14;
+    if (padL > maxGutter) {
+      labels = days.map(k => SHORTFMT.format(mid(k)).replace(/\./g, ''));
+      padL = Math.min(widest(labels) + 14, maxGutter);
+    }
+    ruler.remove();
+
+    const cw = (W - padL - 6) / 24;
     const peak = Math.max(...days.flatMap(k => (byDay.get(k).hours).map(v => v ?? 0)), 1);
 
     for (let h = 0; h < 24; h += 3) {
@@ -361,7 +393,7 @@ function heatmap(host, days, byDay, onPick) {
       const d = byDay.get(k), y = padT + r * rowH;
       const g = el('g', { class:'hm-row' });
       const lb = el('text', { class:'hm-lbl', x:padL - 8, y:y + rowH / 2 + 3, 'text-anchor':'end' });
-      lb.textContent = DAYFMT.format(mid(k)).replace('.', '');
+      lb.textContent = labels[r];
       if (isWE(k)) lb.setAttribute('fill', 'var(--weekend)');
       g.appendChild(lb);
 
@@ -383,7 +415,6 @@ function heatmap(host, days, byDay, onPick) {
       g.addEventListener('click', () => onPick(k));
       svg.appendChild(g);
     });
-    host.appendChild(svg);
   };
   draw();
   if (!host._ro) { host._ro = new ResizeObserver(() => host._draw()); host._ro.observe(host); }
@@ -427,7 +458,7 @@ fetch('data.json?' + Date.now()).then(r => r.json()).then(d => {
   // at 4 Aug 17:00 and cannot include anything before that, nor an hour whose
   // dispatch was missed.
   if (d.lifetime) spans.all = d.lifetime;
-  const LBL = { all:'sinds de start', today:'vandaag', week:'deze week', month:'deze maand' };
+  const LBL = { all:'Sinds de start', today:'Vandaag', week:'Deze week', month:'Deze maand' };
   for (const k of ['all', 'today', 'week', 'month']) {
     if (!spans[k]) continue;
     const { n, p } = spans[k], judged = p - n;
@@ -446,15 +477,29 @@ fetch('data.json?' + Date.now()).then(r => r.json()).then(d => {
     card.addEventListener('pointerleave', hideTip);
   }
 
+  // The "?" explains what the lifetime figure covers. It sits inside the card,
+  // so its own tooltip has to stop the card's hover handler from overwriting it.
+  const iAll = document.getElementById('i-all');
+  const since = DAYS.length
+    ? `Alle getelde fietsers sinds ${FULLFMT.format(mid(DAYS[0]))}.`
+    : 'Alle getelde fietsers sinds de start van de telling.';
+  const atIcon = () => iAll.getBoundingClientRect();
+  iAll.addEventListener('pointermove', e => {
+    e.stopPropagation(); showTip(since, e.clientX, atIcon().top);
+  });
+  iAll.addEventListener('pointerleave', hideTip);
+  iAll.addEventListener('focus', () => showTip(since, atIcon().left, atIcon().top));
+  iAll.addEventListener('blur', hideTip);
+
   // The grafieken can only show what the log holds, which is less than the
   // lifetime counter. Say so rather than leaving the reader to spot it.
   if (d.lifetime) {
     const inLog = DAYS.reduce((a, k) => a + BY.get(k).p, 0);
     const gap = d.lifetime.p - inLog;
     if (gap > 0) document.getElementById('gap').textContent =
-      `De grafieken beslaan ${NF.format(inLog)} passages vanaf `
-      + `${LONGFMT.format(mid(DAYS[0]))}; de ${NF.format(gap)} daarvoor zijn wel `
-      + `meegeteld in "sinds de start", maar niet per uur vastgelegd.`;
+      `De grafieken beginnen op ${LONGFMT.format(mid(DAYS[0]))} en beslaan `
+      + `${NF.format(inLog)} fietsers. De ${NF.format(gap)} van daarvoor tellen wel mee `
+      + `bij "Sinds de start", maar zijn niet per uur vastgelegd.`;
   }
   document.getElementById('t-avg').textContent = fullDays.length
     ? NF.format(Math.round(fullDays.reduce((a, k) => a + BY.get(k).n, 0) / fullDays.length)) : '–';
@@ -482,15 +527,13 @@ fetch('data.json?' + Date.now()).then(r => r.json()).then(d => {
         { dateStyle:'medium', timeStyle:'short' })
     : 'Nog niet bijgewerkt.';
   document.getElementById('caveat').innerHTML =
-    'De totalen hierboven tellen alles mee. De grafieken tonen alleen wat de '
-  + 'camera zelf herkende: passages die later '
-  + 'handmatig zijn bevestigd tellen mee op het moment van bevestigen en niet '
-  + 'op het moment van passeren, en zouden het uurpatroon dus vertekenen.<br>'
-  + 'De reeks begint op ' + LONGFMT.format(mid(DAYS[0])) + '; de ruim 200 passages '
-  + 'daarvoor zitten er niet in.<br>'
-  + 'Op 10 augustus is de detector vervangen door een nauwkeuriger model, dus '
-  + 'tellingen van voor en na die datum zijn niet helemaal gelijkwaardig; de '
-  + 'markering in de maandgrafiek geeft dat moment aan.';
+    'De kerncijfers tellen alles mee, de grafieken alleen wat de camera zelf '
+  + 'herkende. Een fietser die ik later handmatig bevestig, krijgt namelijk het '
+  + 'tijdstip van die controle en niet van de passage, en zou het uurpatroon dus '
+  + 'vertekenen.<br>'
+  + 'Op 10 augustus heb ik de herkenning vervangen door een nauwkeuriger model. '
+  + 'Tellingen van voor en na die datum zijn daardoor niet helemaal gelijkwaardig; '
+  + 'de markering in de maandgrafiek geeft dat moment aan.';
 }).catch(e => {
   document.getElementById('updated').textContent = 'Gegevens konden niet geladen worden.';
   console.error(e);
