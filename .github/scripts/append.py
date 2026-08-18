@@ -28,7 +28,18 @@ def main() -> None:
     d = json.loads(DATA.read_text())
 
     ts = p["ts"]
-    entry = {"ts": ts, "h": int(p["uur"]), "n": int(p["uurtotaal"])}
+    # n = detector-only count, the series every chart is built on. p adds the
+    # bikes recovered by manual judging; it is recorded for the tooltip but must
+    # NOT drive the charts, because judging increments at button-press time, not
+    # at the time the bike passed. A batch-judging session dumps its whole total
+    # into one hour (observed: 168 passed against 24 detected), and how much
+    # judging happens varies by day — which would make days incomparable.
+    entry = {
+        "ts": ts,
+        "h": int(p["uur"]),
+        "n": int(p.get("gedetecteerd", p["uurtotaal"])),
+        "p": int(p["uurtotaal"]),
+    }
 
     # Idempotent per (local date, hour) rather than per instant. Keying on the
     # exact timestamp would let a mid-hour test dispatch and the real :59:50 run
@@ -46,10 +57,18 @@ def main() -> None:
 
     d["hourly"] = log
     d["updated"] = ts
+    # Totals are summed from the log rather than taken from the utility meters,
+    # because the meters run on bicycles_passed_total (judging included) and the
+    # charts run on detected. Taking them from different sources would let the
+    # headline cards and the bars disagree on screen.
+    def since(day: str) -> int:
+        return sum(e["n"] for e in log if e["ts"][:10] >= day)
+
+    today = datetime.fromisoformat(ts).date()
     d["totals"] = {
-        "today": int(p["dagtotaal"]),
-        "week": int(p["weektotaal"]),
-        "month": int(p["maandtotaal"]),
+        "today": since(today.isoformat()),
+        "week": since((today - timedelta(days=today.weekday())).isoformat()),
+        "month": since(today.replace(day=1).isoformat()),
     }
 
     DATA.write_text(json.dumps(d, indent=1, ensure_ascii=False) + "\n")

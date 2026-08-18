@@ -5,51 +5,68 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Fietsen op het Gouwplein</title>
 <meta name="description" content="Automatische fietstelling op het Gouwplein in Weesp.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='14' font-size='14'>🚲</text></svg>">
 <style>
   :root {
-    --bg: #14161a; --panel: #1c1f25; --line: #2a2f37;
-    --ink: #e8eaed; --dim: #9aa3ad; --accent: #4ea8de; --accent-soft: #2d5f7f;
+    --bg:#14161a; --panel:#1b1e24; --line:#2a2f37; --grid:#242931;
+    --ink:#e8eaed; --dim:#98a2ae; --faint:#6b7683;
+    --accent:#4ea8de; --accent-hi:#7cc7f5;
   }
   @media (prefers-color-scheme: light) {
     :root {
-      --bg: #f6f7f9; --panel: #fff; --line: #e2e6ea;
-      --ink: #1a1d21; --dim: #667080; --accent: #1f7fb8; --accent-soft: #bcdcef;
+      --bg:#f5f7f9; --panel:#fff; --line:#e3e7ec; --grid:#eef1f4;
+      --ink:#171a1d; --dim:#5d6875; --faint:#8b95a1;
+      --accent:#2280b8; --accent-hi:#15618f;
     }
   }
-  * { box-sizing: border-box; }
+  * { box-sizing:border-box; }
   body {
-    margin: 0; padding: 2rem 1.25rem 3rem; background: var(--bg); color: var(--ink);
-    font: 16px/1.55 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    margin:0; padding:2.25rem 1.25rem 3.5rem; background:var(--bg); color:var(--ink);
+    font:16px/1.55 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    -webkit-font-smoothing:antialiased;
   }
-  main { max-width: 860px; margin: 0 auto; }
-  h1 { font-size: 1.5rem; margin: 0 0 .25rem; letter-spacing: -.01em; }
-  .sub { color: var(--dim); margin: 0 0 2rem; font-size: .95rem; }
-  h2 { font-size: .8rem; text-transform: uppercase; letter-spacing: .08em;
-       color: var(--dim); font-weight: 600; margin: 2.5rem 0 .9rem; }
+  main { max-width:900px; margin:0 auto; }
+  h1 { font-size:1.55rem; margin:0 0 .2rem; letter-spacing:-.02em; }
+  .sub { color:var(--dim); margin:0 0 2.25rem; font-size:.95rem; }
+  h2 { font-size:.75rem; text-transform:uppercase; letter-spacing:.09em;
+       color:var(--dim); font-weight:600; margin:0 0 .2rem; }
+  .hint { color:var(--faint); font-size:.82rem; margin:0 0 .85rem; }
+  section { margin-top:2.5rem; }
 
-  .cards { display: grid; gap: .75rem; grid-template-columns: repeat(3, 1fr); }
-  @media (max-width: 560px) { .cards { grid-template-columns: 1fr; } }
-  .card { background: var(--panel); border: 1px solid var(--line);
-          border-radius: 10px; padding: 1rem 1.1rem; }
-  .card .n { font-size: 2rem; font-weight: 650; letter-spacing: -.02em;
-             font-variant-numeric: tabular-nums; }
-  .card .l { color: var(--dim); font-size: .85rem; margin-top: .1rem; }
+  .cards { display:grid; gap:.7rem; grid-template-columns:repeat(4,1fr); }
+  @media (max-width:640px) { .cards { grid-template-columns:repeat(2,1fr); } }
+  .card { background:var(--panel); border:1px solid var(--line); border-radius:11px; padding:.95rem 1rem; }
+  .card .n { font-size:1.85rem; font-weight:640; letter-spacing:-.025em; font-variant-numeric:tabular-nums; }
+  .card .l { color:var(--dim); font-size:.82rem; margin-top:.05rem; }
 
-  .chart { background: var(--panel); border: 1px solid var(--line);
-           border-radius: 10px; padding: 1.1rem 1.1rem .8rem; overflow-x: auto; }
-  .bars { display: flex; align-items: flex-end; gap: 3px; height: 160px; min-width: min-content; }
-  .bar { flex: 1 1 0; min-width: 12px; display: flex; flex-direction: column;
-         justify-content: flex-end; height: 100%; }
-  .bar i { display: block; background: var(--accent); border-radius: 3px 3px 0 0;
-           min-height: 2px; transition: background .15s; }
-  .bar:hover i { background: var(--ink); }
-  .bar b { font-weight: 400; font-size: .65rem; color: var(--dim); text-align: center;
-           margin-top: .35rem; font-variant-numeric: tabular-nums; }
-  .empty { color: var(--dim); font-size: .9rem; padding: 2rem 0; text-align: center; }
+  .chart { background:var(--panel); border:1px solid var(--line); border-radius:11px; padding:1rem .9rem .55rem; }
+  .chart svg { display:block; width:100%; }
+  .gridline { stroke:var(--grid); stroke-width:1; shape-rendering:crispEdges; }
+  .axis { fill:var(--faint); font-size:11px; }
+  .axis.y { text-anchor:end; }
+  .axis.x { text-anchor:middle; }
+  .bar { fill:var(--accent); }
+  .hit { fill:transparent; cursor:default; }
+  .col.on .bar { fill:var(--accent-hi); }
+  .col.on .band { fill:currentColor; opacity:.06; }
+  .band { fill:transparent; }
+  .empty { color:var(--dim); font-size:.9rem; padding:2.5rem 0; text-align:center; }
 
-  footer { margin-top: 2.5rem; padding-top: 1.2rem; border-top: 1px solid var(--line);
-           color: var(--dim); font-size: .82rem; }
-  footer p { margin: .4rem 0; }
+  #tip {
+    position:fixed; z-index:10; pointer-events:none; opacity:0; transition:opacity .1s;
+    background:var(--panel); border:1px solid var(--line); border-radius:8px;
+    padding:.5rem .65rem; font-size:.82rem; line-height:1.4;
+    box-shadow:0 6px 22px rgba(0,0,0,.28); white-space:nowrap;
+  }
+  #tip.on { opacity:1; }
+  #tip b { display:block; font-size:.72rem; text-transform:uppercase; letter-spacing:.06em;
+           color:var(--dim); font-weight:600; margin-bottom:.2rem; }
+  #tip .v { font-variant-numeric:tabular-nums; }
+  #tip .m { color:var(--dim); }
+
+  footer { margin-top:3rem; padding-top:1.25rem; border-top:1px solid var(--line);
+           color:var(--dim); font-size:.82rem; }
+  footer p { margin:.45rem 0; max-width:62ch; }
 </style>
 </head>
 <body>
@@ -61,64 +78,161 @@
     <div class="card"><div class="n" id="t-today">–</div><div class="l">vandaag</div></div>
     <div class="card"><div class="n" id="t-week">–</div><div class="l">deze week</div></div>
     <div class="card"><div class="n" id="t-month">–</div><div class="l">deze maand</div></div>
+    <div class="card"><div class="n" id="t-avg">–</div><div class="l">gem. per dag</div></div>
   </div>
 
-  <h2>Gemiddeld per uur van de dag</h2>
-  <div class="chart"><div class="bars" id="c-hour"></div></div>
+  <section>
+    <h2>Per dag</h2>
+    <p class="hint">Beweeg over een balk voor het aantal.</p>
+    <div class="chart" id="c-day"></div>
+  </section>
 
-  <h2>Laatste 14 dagen</h2>
-  <div class="chart"><div class="bars" id="c-day"></div></div>
+  <section>
+    <h2>Gemiddeld per uur van de dag</h2>
+    <p class="hint">Gemiddelde over alle gemeten dagen.</p>
+    <div class="chart" id="c-hour"></div>
+  </section>
 
   <footer>
     <p id="updated"></p>
-    <p>Geteld op de nabije rijbaan met een camera en objectherkenning. De teller
-       mist naar schatting 17–23% van de passages, dus de werkelijke aantallen
-       liggen wat hoger.</p>
+    <p>Geteld met een camera en objectherkenning, alleen op de nabije rijbaan.
+       De detector mist naar schatting 17–23% van de passages, dus het werkelijke
+       aantal ligt hoger. Die ondertelling is wel constant, waardoor dagen en uren
+       onderling goed vergelijkbaar blijven.</p>
   </footer>
 </main>
 
+<div id="tip"></div>
+
 <script>
 const nf = new Intl.NumberFormat('nl-NL');
+const tip = document.getElementById('tip');
 
-function bars(el, items, fmt) {
-  if (!items.length) { el.innerHTML = '<div class="empty">Nog geen gegevens.</div>'; return; }
-  const max = Math.max(...items.map(i => i.v), 1);
-  el.innerHTML = items.map(i =>
-    `<div class="bar" title="${i.title}">` +
-      `<i style="height:${(i.v / max * 100).toFixed(1)}%"></i>` +
-      `<b>${fmt(i)}</b>` +
-    `</div>`
-  ).join('');
+function showTip(html, x, y) {
+  tip.innerHTML = html;
+  tip.classList.add('on');
+  const r = tip.getBoundingClientRect();
+  let left = x - r.width / 2;
+  left = Math.max(8, Math.min(left, innerWidth - r.width - 8));
+  let top = y - r.height - 12;
+  if (top < 8) top = y + 18;              // flip below when there's no room above
+  tip.style.left = left + 'px';
+  tip.style.top = top + 'px';
+}
+const hideTip = () => tip.classList.remove('on');
+
+// "Nice" axis ceiling: 1/2/5 x 10^n at or above max, so gridlines land on round numbers.
+function niceMax(v) {
+  if (v <= 0) return 1;
+  const mag = Math.pow(10, Math.floor(Math.log10(v)));
+  for (const m of [1, 2, 2.5, 5, 10]) if (mag * m >= v) return mag * m;
+  return mag * 10;
+}
+
+const SVG = 'http://www.w3.org/2000/svg';
+const el = (n, a) => { const e = document.createElementNS(SVG, n);
+                       for (const k in a) e.setAttribute(k, a[k]); return e; };
+
+function barChart(host, rows, opts) {
+  const draw = () => {
+    host.innerHTML = '';
+    if (!rows.length) { host.innerHTML = '<div class="empty">Nog geen gegevens.</div>'; return; }
+
+    const W = host.clientWidth, H = opts.height || 210;
+    const padL = 34, padR = 4, padT = 8, padB = 26;
+    const plotW = W - padL - padR, plotH = H - padT - padB;
+    const top = niceMax(Math.max(...rows.map(r => r.v)));
+    const svg = el('svg', { width: W, height: H, viewBox: `0 0 ${W} ${H}` });
+
+    // gridlines + y labels
+    const ticks = 4;
+    for (let i = 0; i <= ticks; i++) {
+      const val = top * i / ticks, y = padT + plotH - (plotH * i / ticks);
+      svg.appendChild(el('line', { class: 'gridline', x1: padL, x2: W - padR, y1: y, y2: y }));
+      const t = el('text', { class: 'axis y', x: padL - 7, y: y + 3.5 });
+      t.textContent = opts.decimals ? val.toFixed(val % 1 ? 1 : 0) : Math.round(val);
+      svg.appendChild(t);
+    }
+
+    const step = plotW / rows.length;
+    const bw = Math.max(2, Math.min(step - 3, 44));
+
+    rows.forEach((r, i) => {
+      const cx = padL + step * i + step / 2;
+      const h = top > 0 ? plotH * r.v / top : 0;
+      const g = el('g', { class: 'col' });
+
+      g.appendChild(el('rect', { class: 'band', x: padL + step * i, y: padT, width: step, height: plotH }));
+      g.appendChild(el('rect', { class: 'bar', x: cx - bw / 2, y: padT + plotH - h,
+                                 width: bw, height: Math.max(h, r.v > 0 ? 1.5 : 0), rx: 2 }));
+
+      // Full-column hit area — hovering anywhere in the slice works, not just on the bar.
+      const hit = el('rect', { class: 'hit', x: padL + step * i, y: padT, width: step, height: plotH });
+      hit.addEventListener('pointerenter', () => g.classList.add('on'));
+      hit.addEventListener('pointerleave', () => { g.classList.remove('on'); hideTip(); });
+      hit.addEventListener('pointermove', e => showTip(r.tip, e.clientX, padT + plotH - h + host.getBoundingClientRect().top));
+      g.appendChild(hit);
+      svg.appendChild(g);
+
+      if (opts.label(r, i) !== '') {
+        const t = el('text', { class: 'axis x', x: cx, y: H - 8 });
+        t.textContent = opts.label(r, i);
+        svg.appendChild(t);
+      }
+    });
+
+    host.appendChild(svg);
+  };
+
+  draw();
+  // Redraw at real pixel width rather than scaling a fixed viewBox, so labels
+  // stay legible instead of shrinking with the container.
+  new ResizeObserver(draw).observe(host);
 }
 
 fetch('data.json?' + Date.now())
   .then(r => r.json())
   .then(d => {
-    for (const k of ['today', 'week', 'month'])
-      document.getElementById('t-' + k).textContent = nf.format(d.totals?.[k] ?? 0);
-
     const log = d.hourly || [];
 
-    // Hour-of-day: mean over every day that reported this hour.
-    const sum = Array(24).fill(0), cnt = Array(24).fill(0);
-    for (const e of log) { sum[e.h] += e.n; cnt[e.h]++; }
-    bars(document.getElementById('c-hour'), Array.from({length: 24}, (_, h) => {
-      const v = cnt[h] ? sum[h] / cnt[h] : 0;
-      return { v, title: `${String(h).padStart(2,'0')}:00–${String(h+1).padStart(2,'0')}:00 — gem. ${v.toFixed(1)}`,
-               h };
-    }), i => i.h % 3 === 0 ? String(i.h).padStart(2, '0') : '');
-
-    // Daily totals, most recent 14 days that have data.
+    // Daily totals from the log, so cards and charts can never disagree.
     const byDay = new Map();
     for (const e of log) {
-      const k = e.ts.slice(0, 10);
-      byDay.set(k, (byDay.get(k) || 0) + e.n);
+      const k = e.ts.slice(0, 10), c = byDay.get(k) || { n: 0, p: 0 };
+      c.n += e.n; c.p += e.p ?? e.n;
+      byDay.set(k, c);
     }
-    const days = [...byDay.entries()].sort().slice(-14);
-    bars(document.getElementById('c-day'), days.map(([k, v]) => ({
-      v, title: `${k} — ${nf.format(v)} fietsen`,
-      lbl: new Date(k + 'T12:00').toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' })
-    })), i => i.lbl);
+    const days = [...byDay.entries()].sort();
+
+    for (const [k, id] of [['today', 't-today'], ['week', 't-week'], ['month', 't-month']])
+      document.getElementById(id).textContent = nf.format(d.totals?.[k] ?? 0);
+    // Exclude today — it is still in progress and would drag the mean down.
+    const done = days.slice(0, -1);
+    document.getElementById('t-avg').textContent = done.length
+      ? nf.format(Math.round(done.reduce((a, [, v]) => a + v.n, 0) / done.length)) : '–';
+
+    const fmtDay = k => new Date(k + 'T12:00').toLocaleDateString('nl-NL',
+      { weekday: 'short', day: 'numeric', month: 'short' });
+
+    barChart(document.getElementById('c-day'), days.slice(-21).map(([k, v], i, arr) => ({
+      v: v.n,
+      lbl: arr.length - 1 - i < 21 && i % 3 === 0 ? fmtDay(k).replace(/^\w+ /, '') : '',
+      tip: `<b>${fmtDay(k)}</b><span class="v">${nf.format(v.n)}</span> gedetecteerd` +
+           (v.p > v.n ? `<br><span class="m">${nf.format(v.p)} incl. handmatig geteld</span>` : '')
+    })), { label: r => r.lbl, height: 200 });
+
+    // Hour of day: mean over every day that reported that hour.
+    const sum = Array(24).fill(0), cnt = Array(24).fill(0);
+    for (const e of log) { sum[e.h] += e.n; cnt[e.h]++; }
+    barChart(document.getElementById('c-hour'), Array.from({ length: 24 }, (_, h) => {
+      const v = cnt[h] ? sum[h] / cnt[h] : 0;
+      return {
+        v, h,
+        tip: `<b>${String(h).padStart(2, '0')}:00 – ${String((h + 1) % 24).padStart(2, '0')}:00</b>` +
+             `gemiddeld <span class="v">${v.toFixed(1)}</span> fietsen` +
+             `<br><span class="m">over ${cnt[h]} dagen</span>`
+      };
+    }), { label: r => r.h % 3 === 0 ? String(r.h).padStart(2, '0') : '', height: 200, decimals: true });
 
     document.getElementById('updated').textContent = d.updated
       ? 'Laatst bijgewerkt: ' + new Date(d.updated).toLocaleString('nl-NL',
