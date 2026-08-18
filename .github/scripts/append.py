@@ -18,7 +18,13 @@ DATA = pathlib.Path(__file__).resolve().parents[2] / "data.json"
 
 
 def main() -> None:
-    p = json.loads(os.environ["PAYLOAD"])
+    # workflow_dispatch carries no client_payload; there is nothing to append.
+    raw = os.environ.get("PAYLOAD") or "null"
+    p = json.loads(raw)
+    if not p:
+        print("no client_payload — nothing to do")
+        return
+
     d = json.loads(DATA.read_text())
 
     ts = p["ts"]
