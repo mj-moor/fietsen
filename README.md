@@ -42,3 +42,17 @@ Detection misses an estimated 17–23% of passes, roughly flat across volume, an
 only the near lane is counted. The published figures are therefore a consistent
 undercount rather than a true total. See
 [the write-up](https://www.mjmoor.nl/) for how it is built.
+
+## Data repair, 18 Aug 2026
+
+Rows from 9 Aug 00:00 through 18 Aug 14:00 were rebuilt from Home Assistant's
+hourly long-term statistics. The original backfill had labelled them one hour
+early — yesterday's 18:00 evening peak sat at 17:00 — and the 14:00 hour on
+18 Aug was lost entirely between the end of the backfill and the first live
+dispatch at 15:59:50. The 4-8 Aug rows were correct and are untouched; the
+break at 9 Aug is exactly the 10-day retention edge for 5-minute statistics,
+which is most likely what the backfill aggregated over.
+
+The 16:00 row on 18 Aug also had `n` = 113: the dispatch still lacked the
+`gedetecteerd` field, so `append.py` fell back to `uurtotaal` during a batch
+judging session. Corrected to the detector's own 43; `p` stays 113.
