@@ -39,7 +39,6 @@
   .card.lead .n { color:var(--accent); }
   .card { background:var(--panel); border:1px solid var(--line); border-radius:11px;
           padding:.9rem 1rem; transition:border-color .12s; }
-  .card.q { cursor:help; }
   .card.q:hover { border-color:var(--accent); }
   .card .n { font-size:1.8rem; font-weight:640; letter-spacing:-.028em; font-variant-numeric:tabular-nums; }
   .card .l { color:var(--dim); font-size:.8rem; margin-top:.05rem; }
@@ -48,7 +47,7 @@
   .info { appearance:none; margin-left:.32rem; padding:0; width:14px; height:14px;
           border:1px solid var(--line); border-radius:50%; background:transparent;
           color:var(--faint); font:inherit; font-size:.62rem; line-height:1;
-          cursor:help; vertical-align:.08em; }
+          vertical-align:.08em; }
   .info:hover, .info:focus-visible { color:var(--ink); border-color:var(--accent); }
 
   .bar-controls { display:flex; flex-wrap:wrap; gap:.6rem; align-items:center;
@@ -198,7 +197,6 @@
     <p>De camera mist naar schatting 17–23% van de passages, dus in werkelijkheid
       rijden er meer. Dat verschil is elke dag ongeveer even groot, waardoor dagen
       en uren onderling goed vergelijkbaar blijven.</p>
-    <p id="gap"></p>
     <p id="caveat"></p>
     <p id="updated"></p>
   </footer>
@@ -493,16 +491,6 @@ fetch('data.json?' + Date.now()).then(r => r.json()).then(d => {
   iAll.addEventListener('focus', () => showTip(since, atIcon().left, atIcon().top));
   iAll.addEventListener('blur', hideTip);
 
-  // The grafieken can only show what the log holds, which is less than the
-  // lifetime counter. Say so rather than leaving the reader to spot it.
-  if (d.lifetime) {
-    const inLog = DAYS.reduce((a, k) => a + BY.get(k).p, 0);
-    const gap = d.lifetime.p - inLog;
-    if (gap > 0) document.getElementById('gap').textContent =
-      `De grafieken beginnen op ${LONGFMT.format(mid(DAYS[0]))} en beslaan `
-      + `${NF.format(inLog)} fietsers. De ${NF.format(gap)} van daarvoor tellen wel mee `
-      + `bij "Sinds de start", maar zijn niet per uur vastgelegd.`;
-  }
   document.getElementById('t-avg').textContent = fullDays.length
     ? NF.format(Math.round(fullDays.reduce((a, k) => a + BY.get(k).n, 0) / fullDays.length)) : '–';
 
