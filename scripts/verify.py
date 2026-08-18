@@ -4,7 +4,12 @@
 Home Assistant is the record of what actually happened; data.json is a copy
 that can drift — a dispatch that never fired leaves a hole, and a backfill can
 put an hour in the wrong slot. This prints every hour where the two disagree
-and exits non-zero if any do, so it can be run on a schedule.
+and exits non-zero if any do.
+
+Run it when something in the counting chain changed — new or renamed meters, an
+edited dispatch payload, after a backfill, or when a chart looks wrong. Not on a
+timer: a failed dispatch leaves a hole the page already shows as an incomplete
+day, and a check that reports "OK" every week is one you stop reading.
 
     op run --env-file=<your ha env file> -- python3 scripts/verify.py
 

@@ -59,7 +59,11 @@ op run --env-file=<env file holding those two vars> -- \
 ```
 
 `verify.py` prints every hour where `data.json` and Home Assistant disagree and
-exits non-zero if any do. It allows the log to sit up to `--tolerance` (default
+exits non-zero if any do. Run it when something in the counting chain changed —
+new or renamed meters, an edited dispatch payload, after a backfill, or when a
+chart looks wrong — rather than on a timer. A failed dispatch leaves a hole the
+page already marks as an incomplete day, and a weekly "OK" is a check you stop
+reading. It allows the log to sit up to `--tolerance` (default
 1) below Home Assistant: the reading is taken at :59:50, so a bicycle in the
 last ten seconds of an hour reaches the meter after the reading but still lands
 in Home Assistant's bucket. The log is never allowed to read high.
