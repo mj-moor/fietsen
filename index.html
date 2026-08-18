@@ -416,14 +416,13 @@ fetch('data.json?' + Date.now()).then(r => r.json()).then(d => {
              q1:q(.25), med:q(.5), q3:q(.75) };
   });
 
-  const last = DAYS[DAYS.length - 1];
-  const since = from => DAYS.filter(k => k >= from)
-    .reduce((a, k) => ({ n: a.n + BY.get(k).n, p: a.p + BY.get(k).p }), { n:0, p:0 });
-  const spans = {
-    today: since(last),
-    week:  since(monday(last)),
-    month: since(last.slice(0, 8) + '01'),
-  };
+  // Card figures come from data.json, which carries them straight from the Home
+  // Assistant meters. Summing the log here would silently under-report: it
+  // starts 4 Aug 17:00 and loses any hour whose dispatch failed.
+  const spans = {};
+  for (const k of ['today', 'week', 'month'])
+    if (d.totals_incl_judged?.[k] != null)
+      spans[k] = { n: d.totals?.[k] ?? 0, p: d.totals_incl_judged[k] };
   // Lifetime comes from the Home Assistant counters, not the log: the log starts
   // at 4 Aug 17:00 and cannot include anything before that, nor an hour whose
   // dispatch was missed.

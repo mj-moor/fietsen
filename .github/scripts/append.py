@@ -57,33 +57,39 @@ def main() -> None:
 
     d["hourly"] = log
     d["updated"] = ts
-    # Totals are summed from the log rather than taken from the utility meters,
-    # because the meters run on bicycles_passed_total (judging included) and the
-    # charts run on detected. Taking them from different sources would let the
-    # headline cards and the bars disagree on screen.
-    def since(day: str, key: str = "n") -> int:
-        return sum(e.get(key, e["n"]) for e in log if e["ts"][:10] >= day)
+    # Totals come from the Home Assistant utility meters, NOT from summing the
+    # log. The log is only ever a subset of reality: it begins 4 Aug 17:00 when
+    # hourly statistics started, and any hour whose dispatch fails leaves a hole
+    # that a sum can never recover. The meters are authoritative and self-heal,
+    # so the cards always agree with Home Assistant.
+    #
+    # totals            = detector only
+    # totals_incl_judged = detector + manually confirmed (what the meters on
+    #                      bicycles_passed_total measure)
+    # GitHub caps client_payload at 10 top-level properties, so the meter values
+    # arrive nested under `incl` (detector + manually confirmed) and `det`
+    # (detector only). The flat form is still accepted so a half-updated
+    # configuration keeps working.
+    def group(name: str, *flat: str) -> dict:
+        g = p.get(name)
+        if isinstance(g, dict):
+            return {k: int(v) for k, v in g.items() if v is not None}
+        keys = ("dag", "week", "maand", "totaal")
+        return {k: int(p[f]) for k, f in zip(keys, flat) if p.get(f) is not None}
 
-    today = datetime.fromisoformat(ts).date()
-    spans = {
-        "today": today.isoformat(),
-        "week": (today - timedelta(days=today.weekday())).isoformat(),
-        "month": today.replace(day=1).isoformat(),
-    }
-    d["totals"] = {k: since(v) for k, v in spans.items()}
-    # Lifetime figures come straight from the Home Assistant counters rather than
-    # being summed from the log. The log can only ever be a subset: it starts at
-    # 4 Aug 17:00 when hourly statistics began, and any hour whose dispatch fails
-    # is a permanent hole. Taking the counters verbatim means the headline total
-    # always matches Home Assistant, and self-heals after a missed hour.
-    if p.get("totaal") is not None:
-        d["lifetime"] = {
-            "n": int(p.get("totaal_gedetecteerd", p["totaal"])),
-            "p": int(p["totaal"]),
-        }
-    # Detected + judged. Kept separate so the file reconciles against the Home
-    # Assistant counters, which meter bicycles_passed_total.
-    d["totals_incl_judged"] = {k: since(v, "p") for k, v in spans.items()}
+    incl = group("incl", "dagtotaal", "weektotaal", "maandtotaal", "totaal")
+    det = group("det", "gedetecteerd_dagtotaal", "gedetecteerd_weektotaal",
+                "gedetecteerd_maandtotaal", "totaal_gedetecteerd")
+
+    def spans(g: dict) -> dict:
+        return {"today": g["dag"], "week": g["week"], "month": g["maand"]}
+
+    if {"dag", "week", "maand"} <= incl.keys():
+        d["totals_incl_judged"] = spans(incl)
+    if {"dag", "week", "maand"} <= det.keys():
+        d["totals"] = spans(det)
+    if "totaal" in incl:
+        d["lifetime"] = {"n": det.get("totaal", incl["totaal"]), "p": incl["totaal"]}
 
     DATA.write_text(json.dumps(d, indent=1, ensure_ascii=False) + "\n")
     print(f"appended {ts} h={entry['h']} n={entry['n']} ({len(log)} rows retained)")
