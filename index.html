@@ -5,18 +5,20 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Fietsen op het Gouwplein</title>
 <meta name="description" content="Automatische fietstelling op het Gouwplein in Weesp.">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='14' font-size='14'>🚲</text></svg>">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='14' font-size='14'>&#128692;</text></svg>">
 <style>
   :root {
     --bg:#14161a; --panel:#1b1e24; --line:#2a2f37; --grid:#242931;
     --ink:#e8eaed; --dim:#98a2ae; --faint:#6b7683;
-    --accent:#4ea8de; --accent-hi:#7cc7f5;
+    --accent:#4ea8de; --accent-hi:#8ed0f7; --weekend:#c98bdb; --band:#4ea8de;
+    --shadow:0 8px 28px rgba(0,0,0,.4);
   }
   @media (prefers-color-scheme: light) {
     :root {
       --bg:#f5f7f9; --panel:#fff; --line:#e3e7ec; --grid:#eef1f4;
       --ink:#171a1d; --dim:#5d6875; --faint:#8b95a1;
-      --accent:#2280b8; --accent-hi:#15618f;
+      --accent:#2280b8; --accent-hi:#0d5c8a; --weekend:#8e4fa8; --band:#2280b8;
+      --shadow:0 8px 24px rgba(20,30,45,.12);
     }
   }
   * { box-sizing:border-box; }
@@ -25,48 +27,97 @@
     font:16px/1.55 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
     -webkit-font-smoothing:antialiased;
   }
-  main { max-width:900px; margin:0 auto; }
-  h1 { font-size:1.55rem; margin:0 0 .2rem; letter-spacing:-.02em; }
-  .sub { color:var(--dim); margin:0 0 2.25rem; font-size:.95rem; }
-  h2 { font-size:.75rem; text-transform:uppercase; letter-spacing:.09em;
+  main { max-width:940px; margin:0 auto; }
+  h1 { font-size:1.6rem; margin:0 0 .2rem; letter-spacing:-.022em; }
+  .sub { color:var(--dim); margin:0 0 2rem; font-size:.95rem; }
+  h2 { font-size:.74rem; text-transform:uppercase; letter-spacing:.09em;
        color:var(--dim); font-weight:600; margin:0 0 .2rem; }
-  .hint { color:var(--faint); font-size:.82rem; margin:0 0 .85rem; }
-  section { margin-top:2.5rem; }
+  .hint { color:var(--faint); font-size:.81rem; margin:0 0 .8rem; }
+  section { margin-top:2.6rem; }
 
   .cards { display:grid; gap:.7rem; grid-template-columns:repeat(4,1fr); }
   @media (max-width:640px) { .cards { grid-template-columns:repeat(2,1fr); } }
-  .card { background:var(--panel); border:1px solid var(--line); border-radius:11px; padding:.95rem 1rem; }
-  .card .n { font-size:1.85rem; font-weight:640; letter-spacing:-.025em; font-variant-numeric:tabular-nums; }
-  .card .l { color:var(--dim); font-size:.82rem; margin-top:.05rem; }
+  .card { background:var(--panel); border:1px solid var(--line); border-radius:11px; padding:.9rem 1rem; }
+  .card .n { font-size:1.8rem; font-weight:640; letter-spacing:-.028em; font-variant-numeric:tabular-nums; }
+  .card .l { color:var(--dim); font-size:.8rem; margin-top:.05rem; }
 
-  .chart { background:var(--panel); border:1px solid var(--line); border-radius:11px; padding:1rem .9rem .55rem; }
+  .bar-controls { display:flex; flex-wrap:wrap; gap:.6rem; align-items:center;
+                  margin:0 0 .9rem; }
+  .seg { display:inline-flex; background:var(--panel); border:1px solid var(--line);
+         border-radius:9px; padding:2px; }
+  .seg button { appearance:none; border:0; background:transparent; color:var(--dim);
+                font:inherit; font-size:.85rem; padding:.32rem .8rem; border-radius:7px;
+                cursor:pointer; transition:background .12s, color .12s; }
+  .seg button:hover { color:var(--ink); }
+  .seg button[aria-pressed="true"] { background:var(--accent); color:#fff; }
+  @media (prefers-color-scheme: light) { .seg button[aria-pressed="true"] { color:#fff; } }
+
+  .nav { display:inline-flex; align-items:center; gap:.15rem; background:var(--panel);
+         border:1px solid var(--line); border-radius:9px; padding:2px; }
+  .nav button { appearance:none; border:0; background:transparent; color:var(--dim);
+                font:inherit; font-size:1rem; line-height:1; padding:.35rem .6rem;
+                border-radius:7px; cursor:pointer; }
+  .nav button:hover:not(:disabled) { color:var(--ink); background:var(--grid); }
+  .nav button:disabled { opacity:.3; cursor:default; }
+  .nav .label { font-size:.85rem; padding:0 .5rem; min-width:11ch; text-align:center;
+                font-variant-numeric:tabular-nums; }
+  input[type=date] {
+    background:var(--panel); border:1px solid var(--line); color:var(--ink);
+    font:inherit; font-size:.85rem; border-radius:9px; padding:.33rem .55rem;
+    color-scheme:dark;
+  }
+  @media (prefers-color-scheme: light) { input[type=date] { color-scheme:light; } }
+
+  .chart { background:var(--panel); border:1px solid var(--line); border-radius:11px;
+           padding:1rem .9rem .55rem; }
   .chart svg { display:block; width:100%; }
   .gridline { stroke:var(--grid); stroke-width:1; shape-rendering:crispEdges; }
   .axis { fill:var(--faint); font-size:11px; }
   .axis.y { text-anchor:end; }
   .axis.x { text-anchor:middle; }
   .bar { fill:var(--accent); }
-  .hit { fill:transparent; cursor:default; }
+  .bar.we { fill:var(--weekend); }
+  .bar.partial { opacity:.42; }
+  .hit { fill:transparent; }
   .col.on .bar { fill:var(--accent-hi); }
-  .col.on .band { fill:currentColor; opacity:.06; }
-  .band { fill:transparent; }
+  .col.on .band { opacity:.07; }
+  .band { fill:var(--ink); opacity:0; }
+  .ghost { fill:none; stroke:var(--faint); stroke-width:1.5; stroke-dasharray:3 3; opacity:.65; }
+  .iqr { fill:var(--band); opacity:.18; }
+  .rng { fill:var(--band); opacity:.08; }
+  .med { fill:none; stroke:var(--accent); stroke-width:2.2; stroke-linejoin:round; }
+  .dot { fill:var(--accent); }
+  .mark { stroke:var(--faint); stroke-width:1; stroke-dasharray:2 3; }
+  .mark-t { fill:var(--faint); font-size:10px; }
   .empty { color:var(--dim); font-size:.9rem; padding:2.5rem 0; text-align:center; }
 
+  .cell { stroke:var(--panel); stroke-width:1.5; }
+  .cell.on { stroke:var(--ink); stroke-width:1.5; }
+  .hm-lbl { fill:var(--faint); font-size:10.5px; }
+  .hm-row { cursor:pointer; }
+
+  .legend { display:flex; gap:1rem; flex-wrap:wrap; align-items:center;
+            color:var(--faint); font-size:.78rem; margin:.7rem 0 0; }
+  .legend i { display:inline-block; width:11px; height:11px; border-radius:3px;
+              vertical-align:-1px; margin-right:.35rem; }
+  .scale { display:inline-flex; height:9px; width:74px; border-radius:3px; overflow:hidden; }
+  .scale span { flex:1; }
+
   #tip {
-    position:fixed; z-index:10; pointer-events:none; opacity:0; transition:opacity .1s;
-    background:var(--panel); border:1px solid var(--line); border-radius:8px;
-    padding:.5rem .65rem; font-size:.82rem; line-height:1.4;
-    box-shadow:0 6px 22px rgba(0,0,0,.28); white-space:nowrap;
+    position:fixed; z-index:20; pointer-events:none; opacity:0; transition:opacity .09s;
+    background:var(--panel); border:1px solid var(--line); border-radius:9px;
+    padding:.52rem .68rem; font-size:.82rem; line-height:1.45;
+    box-shadow:var(--shadow); white-space:nowrap;
   }
   #tip.on { opacity:1; }
-  #tip b { display:block; font-size:.72rem; text-transform:uppercase; letter-spacing:.06em;
-           color:var(--dim); font-weight:600; margin-bottom:.2rem; }
-  #tip .v { font-variant-numeric:tabular-nums; }
+  #tip b { display:block; font-size:.71rem; text-transform:uppercase; letter-spacing:.06em;
+           color:var(--dim); font-weight:600; margin-bottom:.22rem; }
+  #tip .v { font-variant-numeric:tabular-nums; font-weight:600; }
   #tip .m { color:var(--dim); }
 
-  footer { margin-top:3rem; padding-top:1.25rem; border-top:1px solid var(--line);
-           color:var(--dim); font-size:.82rem; }
-  footer p { margin:.45rem 0; max-width:62ch; }
+  footer { margin-top:3.2rem; padding-top:1.25rem; border-top:1px solid var(--line);
+           color:var(--dim); font-size:.81rem; }
+  footer p { margin:.5rem 0; max-width:64ch; }
 </style>
 </head>
 <body>
@@ -78,171 +129,392 @@
     <div class="card"><div class="n" id="t-today">–</div><div class="l">vandaag</div></div>
     <div class="card"><div class="n" id="t-week">–</div><div class="l">deze week</div></div>
     <div class="card"><div class="n" id="t-month">–</div><div class="l">deze maand</div></div>
-    <div class="card"><div class="n" id="t-avg">–</div><div class="l">gem. per dag</div></div>
+    <div class="card"><div class="n" id="t-avg">–</div><div class="l">gem. per hele dag</div></div>
   </div>
 
   <section>
-    <h2>Per dag</h2>
-    <p class="hint">Beweeg over een balk voor het aantal.</p>
-    <div class="chart" id="c-day"></div>
+    <div class="bar-controls">
+      <div class="seg" id="seg">
+        <button data-mode="day">Dag</button>
+        <button data-mode="week">Week</button>
+        <button data-mode="month">Maand</button>
+      </div>
+      <div class="nav">
+        <button id="prev" aria-label="vorige">‹</button>
+        <span class="label" id="nav-label">–</span>
+        <button id="next" aria-label="volgende">›</button>
+      </div>
+      <input type="date" id="picker">
+    </div>
+    <div class="chart" id="c-main"></div>
+    <div class="legend">
+      <span><i style="background:var(--accent)"></i>doordeweeks</span>
+      <span><i style="background:var(--weekend)"></i>weekend</span>
+      <span><i style="background:var(--accent);opacity:.42"></i>onvolledige dag</span>
+      <span id="lg-ghost" hidden>‑ ‑ ‑ mediaan van alle dagen</span>
+    </div>
   </section>
 
   <section>
-    <h2>Gemiddeld per uur van de dag</h2>
-    <p class="hint">Gemiddelde over alle gemeten dagen.</p>
+    <h2>Alle dagen, uur voor uur</h2>
+    <p class="hint">Elke rij is een dag. Klik een rij om die dag te openen.</p>
+    <div class="chart" id="c-heat"></div>
+    <div class="legend">
+      <span>minder
+        <span class="scale" id="hm-scale"></span>
+      meer</span>
+    </div>
+  </section>
+
+  <section>
+    <h2>Uur van de dag</h2>
+    <p class="hint">Mediaan met spreiding — de band toont de middelste helft van de dagen,
+      de lichte vlek het volledige bereik.</p>
     <div class="chart" id="c-hour"></div>
   </section>
 
   <footer>
     <p id="updated"></p>
     <p>Geteld met een camera en objectherkenning, alleen op de nabije rijbaan.
-       De detector mist naar schatting 17–23% van de passages, dus het werkelijke
-       aantal ligt hoger. Die ondertelling is wel constant, waardoor dagen en uren
-       onderling goed vergelijkbaar blijven.</p>
+      De detector mist naar schatting 17–23% van de passages, dus het werkelijke
+      aantal ligt hoger. Die ondertelling is constant, waardoor dagen en uren
+      onderling goed vergelijkbaar blijven.</p>
+    <p id="caveat"></p>
   </footer>
 </main>
 
 <div id="tip"></div>
 
 <script>
-const nf = new Intl.NumberFormat('nl-NL');
+const NF = new Intl.NumberFormat('nl-NL');
 const tip = document.getElementById('tip');
-
-function showTip(html, x, y) {
-  tip.innerHTML = html;
-  tip.classList.add('on');
-  const r = tip.getBoundingClientRect();
-  let left = x - r.width / 2;
-  left = Math.max(8, Math.min(left, innerWidth - r.width - 8));
-  let top = y - r.height - 12;
-  if (top < 8) top = y + 18;              // flip below when there's no room above
-  tip.style.left = left + 'px';
-  tip.style.top = top + 'px';
-}
-const hideTip = () => tip.classList.remove('on');
-
-// "Nice" axis ceiling: 1/2/5 x 10^n at or above max, so gridlines land on round numbers.
-function niceMax(v) {
-  if (v <= 0) return 1;
-  const mag = Math.pow(10, Math.floor(Math.log10(v)));
-  for (const m of [1, 2, 2.5, 5, 10]) if (mag * m >= v) return mag * m;
-  return mag * 10;
-}
-
 const SVG = 'http://www.w3.org/2000/svg';
 const el = (n, a) => { const e = document.createElementNS(SVG, n);
                        for (const k in a) e.setAttribute(k, a[k]); return e; };
+const DAYFMT  = new Intl.DateTimeFormat('nl-NL', { weekday:'short', day:'numeric', month:'short' });
+const LONGFMT = new Intl.DateTimeFormat('nl-NL', { weekday:'long', day:'numeric', month:'long' });
+const MONFMT  = new Intl.DateTimeFormat('nl-NL', { month:'long', year:'numeric' });
+const iso  = d => d.toISOString().slice(0, 10);
+const mid  = k => new Date(k + 'T12:00:00');
+const addD = (k, n) => { const d = mid(k); d.setDate(d.getDate() + n); return iso(d); };
+const isWE = k => [0, 6].includes(mid(k).getDay());
+const monday = k => addD(k, -((mid(k).getDay() + 6) % 7));
 
-function barChart(host, rows, opts) {
-  const draw = () => {
-    host.innerHTML = '';
-    if (!rows.length) { host.innerHTML = '<div class="empty">Nog geen gegevens.</div>'; return; }
+function showTip(html, x, y) {
+  tip.innerHTML = html; tip.classList.add('on');
+  const r = tip.getBoundingClientRect();
+  tip.style.left = Math.max(8, Math.min(x - r.width / 2, innerWidth - r.width - 8)) + 'px';
+  tip.style.top  = (y - r.height - 12 < 8 ? y + 18 : y - r.height - 12) + 'px';
+}
+const hideTip = () => tip.classList.remove('on');
 
-    const W = host.clientWidth, H = opts.height || 210;
-    const padL = 34, padR = 4, padT = 8, padB = 26;
-    const plotW = W - padL - padR, plotH = H - padT - padB;
-    const top = niceMax(Math.max(...rows.map(r => r.v)));
-    const svg = el('svg', { width: W, height: H, viewBox: `0 0 ${W} ${H}` });
-
-    // gridlines + y labels
-    const ticks = 4;
-    for (let i = 0; i <= ticks; i++) {
-      const val = top * i / ticks, y = padT + plotH - (plotH * i / ticks);
-      svg.appendChild(el('line', { class: 'gridline', x1: padL, x2: W - padR, y1: y, y2: y }));
-      const t = el('text', { class: 'axis y', x: padL - 7, y: y + 3.5 });
-      t.textContent = opts.decimals ? val.toFixed(val % 1 ? 1 : 0) : Math.round(val);
-      svg.appendChild(t);
-    }
-
-    const step = plotW / rows.length;
-    const bw = Math.max(2, Math.min(step - 3, 44));
-
-    rows.forEach((r, i) => {
-      const cx = padL + step * i + step / 2;
-      const h = top > 0 ? plotH * r.v / top : 0;
-      const g = el('g', { class: 'col' });
-
-      g.appendChild(el('rect', { class: 'band', x: padL + step * i, y: padT, width: step, height: plotH }));
-      g.appendChild(el('rect', { class: 'bar', x: cx - bw / 2, y: padT + plotH - h,
-                                 width: bw, height: Math.max(h, r.v > 0 ? 1.5 : 0), rx: 2 }));
-
-      // Full-column hit area — hovering anywhere in the slice works, not just on the bar.
-      const hit = el('rect', { class: 'hit', x: padL + step * i, y: padT, width: step, height: plotH });
-      hit.addEventListener('pointerenter', () => g.classList.add('on'));
-      hit.addEventListener('pointerleave', () => { g.classList.remove('on'); hideTip(); });
-      hit.addEventListener('pointermove', e => showTip(r.tip, e.clientX, padT + plotH - h + host.getBoundingClientRect().top));
-      g.appendChild(hit);
-      svg.appendChild(g);
-
-      if (opts.label(r, i) !== '') {
-        const t = el('text', { class: 'axis x', x: cx, y: H - 8 });
-        t.textContent = opts.label(r, i);
-        svg.appendChild(t);
-      }
-    });
-
-    host.appendChild(svg);
-  };
-
-  draw();
-  // Redraw at real pixel width rather than scaling a fixed viewBox, so labels
-  // stay legible instead of shrinking with the container.
-  new ResizeObserver(draw).observe(host);
+// Gridlines land on round numbers instead of wherever the max happens to fall.
+function niceMax(v) {
+  if (v <= 0) return 1;
+  const mag = Math.pow(10, Math.floor(Math.log10(v)));
+  for (const m of [1, 1.5, 2, 2.5, 3, 4, 5, 7.5, 10]) if (mag * m >= v) return mag * m;
+  return mag * 10;
 }
 
-fetch('data.json?' + Date.now())
-  .then(r => r.json())
-  .then(d => {
-    const log = d.hourly || [];
+function frame(host, H, top, opts = {}) {
+  host.innerHTML = '';
+  const W = host.clientWidth || 600;
+  const padL = opts.padL ?? 36, padR = opts.padR ?? 6, padT = 10, padB = 26;
+  const svg = el('svg', { width: W, height: H, viewBox: `0 0 ${W} ${H}` });
+  const plotW = W - padL - padR, plotH = H - padT - padB;
+  const ticks = 4;
+  for (let i = 0; i <= ticks; i++) {
+    const val = top * i / ticks, y = padT + plotH - plotH * i / ticks;
+    svg.appendChild(el('line', { class:'gridline', x1:padL, x2:W - padR, y1:y, y2:y }));
+    const t = el('text', { class:'axis y', x:padL - 7, y:y + 3.5 });
+    t.textContent = opts.decimals && val % 1 ? val.toFixed(1) : Math.round(val);
+    svg.appendChild(t);
+  }
+  return { svg, W, H, padL, padR, padT, padB, plotW, plotH,
+           y: v => padT + plotH - (top > 0 ? plotH * v / top : 0) };
+}
 
-    // Daily totals from the log, so cards and charts can never disagree.
-    const byDay = new Map();
-    for (const e of log) {
-      const k = e.ts.slice(0, 10), c = byDay.get(k) || { n: 0, p: 0 };
-      c.n += e.n; c.p += e.p ?? e.n;
-      byDay.set(k, c);
+/* Bars, with a full-column hover target and an optional dashed reference line. */
+function barChart(host, rows, opts = {}) {
+  const draw = () => {
+    if (!rows.length) { host.innerHTML = '<div class="empty">Geen gegevens voor deze periode.</div>'; return; }
+    const top = niceMax(Math.max(...rows.map(r => r.v), ...(opts.ghost || [0])));
+    const f = frame(host, opts.height || 210, top, opts);
+    const step = f.plotW / rows.length;
+    const bw = Math.max(2, Math.min(step - 3, 46));
+
+    if (opts.mark) {
+      const i = rows.findIndex(r => r.key === opts.mark.key);
+      if (i > 0) {
+        const x = f.padL + step * i;
+        f.svg.appendChild(el('line', { class:'mark', x1:x, x2:x, y1:f.padT, y2:f.padT + f.plotH }));
+        const t = el('text', { class:'mark-t', x:x + 4, y:f.padT + 10 });
+        t.textContent = opts.mark.text; f.svg.appendChild(t);
+      }
     }
-    const days = [...byDay.entries()].sort();
 
-    for (const [k, id] of [['today', 't-today'], ['week', 't-week'], ['month', 't-month']])
-      document.getElementById(id).textContent = nf.format(d.totals?.[k] ?? 0);
-    // Exclude today — it is still in progress and would drag the mean down.
-    const done = days.slice(0, -1);
-    document.getElementById('t-avg').textContent = done.length
-      ? nf.format(Math.round(done.reduce((a, [, v]) => a + v.n, 0) / done.length)) : '–';
+    rows.forEach((r, i) => {
+      const cx = f.padL + step * i + step / 2, yv = f.y(r.v), h = f.padT + f.plotH - yv;
+      const g = el('g', { class:'col' });
+      g.appendChild(el('rect', { class:'band', x:f.padL + step * i, y:f.padT, width:step, height:f.plotH }));
+      g.appendChild(el('rect', {
+        class: 'bar' + (r.we ? ' we' : '') + (r.partial ? ' partial' : ''),
+        x: cx - bw / 2, y: yv, width: bw, height: Math.max(h, r.v > 0 ? 1.5 : 0), rx: 2 }));
+      const hit = el('rect', { class:'hit', x:f.padL + step * i, y:f.padT, width:step, height:f.plotH });
+      hit.addEventListener('pointerenter', () => g.classList.add('on'));
+      hit.addEventListener('pointerleave', () => { g.classList.remove('on'); hideTip(); });
+      hit.addEventListener('pointermove', e => showTip(r.tip, e.clientX,
+        host.getBoundingClientRect().top + yv));
+      if (r.onClick) { hit.style.cursor = 'pointer'; hit.addEventListener('click', r.onClick); }
+      g.appendChild(hit);
+      f.svg.appendChild(g);
+      const lbl = opts.label(r, i);
+      if (lbl) { const t = el('text', { class:'axis x', x:cx, y:f.H - 8 }); t.textContent = lbl;
+                 f.svg.appendChild(t); }
+    });
 
-    const fmtDay = k => new Date(k + 'T12:00').toLocaleDateString('nl-NL',
-      { weekday: 'short', day: 'numeric', month: 'short' });
+    if (opts.ghost) {
+      const pts = opts.ghost.map((v, i) => `${f.padL + step * i + step / 2},${f.y(v)}`).join(' ');
+      f.svg.appendChild(el('polyline', { class:'ghost', points:pts }));
+    }
+    host.appendChild(f.svg);
+  };
+  draw();
+  if (!host._ro) { host._ro = new ResizeObserver(() => host._draw()); host._ro.observe(host); }
+  host._draw = draw;
+}
 
-    barChart(document.getElementById('c-day'), days.slice(-21).map(([k, v], i, arr) => ({
-      v: v.n,
-      lbl: arr.length - 1 - i < 21 && i % 3 === 0 ? fmtDay(k).replace(/^\w+ /, '') : '',
-      tip: `<b>${fmtDay(k)}</b><span class="v">${nf.format(v.n)}</span> gedetecteerd` +
-           (v.p > v.n ? `<br><span class="m">${nf.format(v.p)} incl. handmatig geteld</span>` : '')
-    })), { label: r => r.lbl, height: 200 });
+/* Median line over an IQR band — the mean is unusable here: hour 08 has a mean of
+   25 against a median of 20, dragged by a single 95 outlier. */
+function bandChart(host, stats, opts = {}) {
+  const draw = () => {
+    const top = niceMax(Math.max(...stats.map(s => s.max)));
+    const f = frame(host, opts.height || 230, top, { decimals: true });
+    const step = f.plotW / stats.length;
+    const cx = i => f.padL + step * i + step / 2;
 
-    // Hour of day: mean over every day that reported that hour.
-    const sum = Array(24).fill(0), cnt = Array(24).fill(0);
-    for (const e of log) { sum[e.h] += e.n; cnt[e.h]++; }
-    barChart(document.getElementById('c-hour'), Array.from({ length: 24 }, (_, h) => {
-      const v = cnt[h] ? sum[h] / cnt[h] : 0;
-      return {
-        v, h,
-        tip: `<b>${String(h).padStart(2, '0')}:00 – ${String((h + 1) % 24).padStart(2, '0')}:00</b>` +
-             `gemiddeld <span class="v">${v.toFixed(1)}</span> fietsen` +
-             `<br><span class="m">over ${cnt[h]} dagen</span>`
-      };
-    }), { label: r => r.h % 3 === 0 ? String(r.h).padStart(2, '0') : '', height: 200, decimals: true });
+    const area = (lo, hi, cls) => {
+      const up = stats.map((s, i) => `${cx(i)},${f.y(s[hi])}`);
+      const dn = stats.map((s, i) => `${cx(i)},${f.y(s[lo])}`).reverse();
+      f.svg.appendChild(el('polygon', { class:cls, points:[...up, ...dn].join(' ') }));
+    };
+    area('min', 'max', 'rng');
+    area('q1', 'q3', 'iqr');
+    f.svg.appendChild(el('polyline', { class:'med',
+      points: stats.map((s, i) => `${cx(i)},${f.y(s.med)}`).join(' ') }));
 
-    document.getElementById('updated').textContent = d.updated
-      ? 'Laatst bijgewerkt: ' + new Date(d.updated).toLocaleString('nl-NL',
-          { dateStyle: 'medium', timeStyle: 'short' })
-      : 'Nog niet bijgewerkt.';
-  })
-  .catch(e => {
-    document.getElementById('updated').textContent = 'Gegevens konden niet geladen worden.';
-    console.error(e);
+    stats.forEach((s, i) => {
+      const g = el('g', { class:'col' });
+      g.appendChild(el('rect', { class:'band', x:f.padL + step * i, y:f.padT, width:step, height:f.plotH }));
+      g.appendChild(el('circle', { class:'dot', cx:cx(i), cy:f.y(s.med), r:2.6 }));
+      const hit = el('rect', { class:'hit', x:f.padL + step * i, y:f.padT, width:step, height:f.plotH });
+      hit.addEventListener('pointerenter', () => g.classList.add('on'));
+      hit.addEventListener('pointerleave', () => { g.classList.remove('on'); hideTip(); });
+      hit.addEventListener('pointermove', e => showTip(
+        `<b>${String(s.h).padStart(2,'0')}:00 – ${String((s.h+1)%24).padStart(2,'0')}:00</b>` +
+        `mediaan <span class="v">${s.med}</span> fietsen<br>` +
+        `<span class="m">middelste helft ${s.q1}–${s.q3} · bereik ${s.min}–${s.max}</span><br>` +
+        `<span class="m">over ${s.n} volledige dagen</span>`,
+        e.clientX, host.getBoundingClientRect().top + f.y(s.max)));
+      g.appendChild(hit);
+      f.svg.appendChild(g);
+      if (s.h % 3 === 0) {
+        const t = el('text', { class:'axis x', x:cx(i), y:f.H - 8 });
+        t.textContent = String(s.h).padStart(2, '0'); f.svg.appendChild(t);
+      }
+    });
+    host.appendChild(f.svg);
+  };
+  draw();
+  if (!host._ro) { host._ro = new ResizeObserver(() => host._draw()); host._ro.observe(host); }
+  host._draw = draw;
+}
+
+/* Day x hour heatmap. sqrt scaling, or quiet hours vanish next to the 16:00 peak. */
+function heatmap(host, days, byDay, onPick) {
+  const draw = () => {
+    host.innerHTML = '';
+    const W = host.clientWidth || 600;
+    const padL = 52, padT = 16, padB = 4, rowH = 17, gap = 2;
+    const cw = (W - padL - 6) / 24;
+    const H = padT + days.length * rowH + padB + 6;
+    const svg = el('svg', { width:W, height:H, viewBox:`0 0 ${W} ${H}` });
+    const peak = Math.max(...days.flatMap(k => (byDay.get(k).hours).map(v => v ?? 0)), 1);
+
+    for (let h = 0; h < 24; h += 3) {
+      const t = el('text', { class:'hm-lbl', x:padL + cw * h + cw / 2, y:11, 'text-anchor':'middle' });
+      t.textContent = String(h).padStart(2, '0'); svg.appendChild(t);
+    }
+
+    days.forEach((k, r) => {
+      const d = byDay.get(k), y = padT + r * rowH;
+      const g = el('g', { class:'hm-row' });
+      const lb = el('text', { class:'hm-lbl', x:padL - 8, y:y + rowH / 2 + 3, 'text-anchor':'end' });
+      lb.textContent = DAYFMT.format(mid(k)).replace('.', '');
+      if (isWE(k)) lb.setAttribute('fill', 'var(--weekend)');
+      g.appendChild(lb);
+
+      for (let h = 0; h < 24; h++) {
+        const v = d.hours[h];
+        const cell = el('rect', { class:'cell', x:padL + cw * h, y:y + gap / 2,
+          width:Math.max(cw - gap, 1), height:rowH - gap, rx:2.5,
+          fill: v == null ? 'var(--grid)' : 'var(--accent)',
+          'fill-opacity': v == null ? .4 : (v > 0 ? .08 + .92 * Math.sqrt(v / peak) : .05) });
+        cell.addEventListener('pointerenter', () => cell.classList.add('on'));
+        cell.addEventListener('pointerleave', () => { cell.classList.remove('on'); hideTip(); });
+        cell.addEventListener('pointermove', e => showTip(
+          `<b>${LONGFMT.format(mid(k))} · ${String(h).padStart(2,'0')}:00</b>` +
+          (v == null ? '<span class="m">niet gemeten</span>'
+                     : `<span class="v">${v}</span> fietsen`),
+          e.clientX, host.getBoundingClientRect().top + y));
+        g.appendChild(cell);
+      }
+      g.addEventListener('click', () => onPick(k));
+      svg.appendChild(g);
+    });
+    host.appendChild(svg);
+  };
+  draw();
+  if (!host._ro) { host._ro = new ResizeObserver(() => host._draw()); host._ro.observe(host); }
+  host._draw = draw;
+}
+
+/* ---------------------------------------------------------------- */
+
+const state = { mode: 'day', anchor: null };
+let DAYS = [], BY = new Map(), HOURS = [];
+
+fetch('data.json?' + Date.now()).then(r => r.json()).then(d => {
+  const log = d.hourly || [];
+  for (const e of log) {
+    const k = e.ts.slice(0, 10);
+    if (!BY.has(k)) BY.set(k, { hours: Array(24).fill(null), n: 0, p: 0 });
+    const c = BY.get(k);
+    c.hours[e.h] = e.n; c.n += e.n; c.p += e.p ?? e.n;
+  }
+  DAYS = [...BY.keys()].sort();
+  for (const k of DAYS) BY.get(k).full = BY.get(k).hours.every(v => v != null);
+
+  // Per-hour distribution over COMPLETE days only — a 7-hour day would otherwise
+  // contribute zeros for the 17 hours it never measured.
+  const fullDays = DAYS.filter(k => BY.get(k).full);
+  HOURS = Array.from({ length: 24 }, (_, h) => {
+    const s = fullDays.map(k => BY.get(k).hours[h]).sort((a, b) => a - b);
+    const q = f => s.length ? s[Math.min(s.length - 1, Math.floor(s.length * f))] : 0;
+    return { h, n:s.length, min:s[0] ?? 0, max:s[s.length - 1] ?? 0,
+             q1:q(.25), med:q(.5), q3:q(.75) };
   });
+
+  for (const [k, id] of [['today','t-today'], ['week','t-week'], ['month','t-month']])
+    document.getElementById(id).textContent = NF.format(d.totals?.[k] ?? 0);
+  document.getElementById('t-avg').textContent = fullDays.length
+    ? NF.format(Math.round(fullDays.reduce((a, k) => a + BY.get(k).n, 0) / fullDays.length)) : '–';
+
+  const pick = document.getElementById('picker');
+  pick.min = DAYS[0]; pick.max = DAYS[DAYS.length - 1];
+  pick.addEventListener('change', () => { if (pick.value) { state.anchor = pick.value; render(); } });
+
+  document.getElementById('seg').addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    state.mode = b.dataset.mode; render();
+  });
+  document.getElementById('prev').addEventListener('click', () => shift(-1));
+  document.getElementById('next').addEventListener('click', () => shift(1));
+
+  state.anchor = DAYS[DAYS.length - 1];
+  heatmap(document.getElementById('c-heat'), DAYS, BY,
+          k => { state.mode = 'day'; state.anchor = k; render(); });
+  bandChart(document.getElementById('c-hour'), HOURS);
+  buildScale();
+  render();
+
+  document.getElementById('updated').textContent = d.updated
+    ? 'Laatst bijgewerkt: ' + new Date(d.updated).toLocaleString('nl-NL',
+        { dateStyle:'medium', timeStyle:'short' })
+    : 'Nog niet bijgewerkt.';
+  document.getElementById('caveat').textContent =
+    'De detector is op 10 augustus vervangen door een nauwkeuriger model. '
+  + 'Tellingen van voor en na die datum zijn daardoor niet helemaal gelijkwaardig; '
+  + 'de markering in de dagengrafiek geeft het moment aan.';
+}).catch(e => {
+  document.getElementById('updated').textContent = 'Gegevens konden niet geladen worden.';
+  console.error(e);
+});
+
+function buildScale() {
+  const s = document.getElementById('hm-scale');
+  s.innerHTML = Array.from({ length: 12 }, (_, i) =>
+    `<span style="background:var(--accent);opacity:${(.08 + .92 * Math.sqrt((i + 1) / 12)).toFixed(2)}"></span>`).join('');
+}
+
+function shift(dir) {
+  if (state.mode === 'day')  state.anchor = addD(state.anchor, dir);
+  if (state.mode === 'week') state.anchor = addD(state.anchor, 7 * dir);
+  if (state.mode === 'month') {
+    const d = mid(state.anchor); d.setMonth(d.getMonth() + dir, 1); state.anchor = iso(d);
+  }
+  render();
+}
+
+function render() {
+  for (const b of document.querySelectorAll('#seg button'))
+    b.setAttribute('aria-pressed', b.dataset.mode === state.mode);
+  document.getElementById('picker').value = state.anchor;
+  const host = document.getElementById('c-main');
+  const ghostLg = document.getElementById('lg-ghost');
+  let label, rows, opts;
+
+  if (state.mode === 'day') {
+    const d = BY.get(state.anchor);
+    label = DAYFMT.format(mid(state.anchor));
+    rows = Array.from({ length: 24 }, (_, h) => ({
+      v: d ? (d.hours[h] ?? 0) : 0, key: h, we: isWE(state.anchor),
+      partial: !d || d.hours[h] == null,
+      tip: `<b>${LONGFMT.format(mid(state.anchor))} · ${String(h).padStart(2,'0')}:00</b>` +
+           (d && d.hours[h] != null
+             ? `<span class="v">${d.hours[h]}</span> fietsen<br><span class="m">mediaan voor dit uur: ${HOURS[h].med}</span>`
+             : '<span class="m">niet gemeten</span>')
+    }));
+    opts = { label: r => r.key % 3 === 0 ? String(r.key).padStart(2, '0') : '',
+             ghost: HOURS.map(s => s.med), height: 220 };
+    ghostLg.hidden = false;
+  } else {
+    const inRange = state.mode === 'week'
+      ? (k => monday(k) === monday(state.anchor))
+      : (k => k.slice(0, 7) === state.anchor.slice(0, 7));
+    label = state.mode === 'week'
+      ? 'week van ' + DAYFMT.format(mid(monday(state.anchor)))
+      : MONFMT.format(mid(state.anchor));
+    const keys = DAYS.filter(inRange);
+    rows = keys.map(k => {
+      const c = BY.get(k);
+      return { v: c.n, key: k, we: isWE(k), partial: !c.full,
+               onClick: () => { state.mode = 'day'; state.anchor = k; render(); },
+               tip: `<b>${LONGFMT.format(mid(k))}</b><span class="v">${NF.format(c.n)}</span> gedetecteerd` +
+                    (c.p > c.n ? `<br><span class="m">${NF.format(c.p)} incl. handmatig geteld</span>` : '') +
+                    (c.full ? '' : '<br><span class="m">onvolledige dag</span>') };
+    });
+    opts = { label: (r, i) => rows.length > 16 && i % 3 ? '' :
+               DAYFMT.format(mid(r.key)).replace(/^\w+\.? /, '').replace('.', ''),
+             height: 220,
+             mark: state.mode === 'month' ? { key:'2026-08-10', text:'nieuw model' } : null };
+    ghostLg.hidden = true;
+  }
+
+  barChart(host, rows, opts);
+  document.getElementById('nav-label').textContent = label;
+  // Disable navigation once the next period would hold no data at all, so the
+  // arrows can't wander off into empty weeks.
+  const has = (k, dir) => {
+    if (state.mode === 'day')  return DAYS.includes(addD(k, dir));
+    if (state.mode === 'week') { const m = monday(addD(k, 7 * dir));
+                                 return DAYS.some(x => monday(x) === m); }
+    const d = mid(k); d.setMonth(d.getMonth() + dir, 1);
+    return DAYS.some(x => x.slice(0, 7) === iso(d).slice(0, 7));
+  };
+  document.getElementById('prev').disabled = !has(state.anchor, -1);
+  document.getElementById('next').disabled = !has(state.anchor, 1);
+}
 </script>
 </body>
 </html>
