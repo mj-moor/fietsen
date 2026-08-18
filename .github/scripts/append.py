@@ -11,10 +11,21 @@ for the headline cards. The page derives everything else from `hourly`.
 import json
 import os
 import pathlib
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 RETAIN_DAYS = 90
 DATA = pathlib.Path(__file__).resolve().parents[2] / "data.json"
+
+
+def hour_key(ts: str) -> str:
+    """The UTC instant of the hour a reading belongs to.
+
+    Readings are stamped at :59:50 and backfilled rows at :00:00; both belong to
+    the hour they start in. Going through UTC makes the two local 02:00 hours of
+    the October clock change distinct.
+    """
+    t = datetime.fromisoformat(ts).replace(minute=0, second=0, microsecond=0)
+    return t.astimezone(timezone.utc).isoformat()
 
 
 def main() -> None:
@@ -41,12 +52,16 @@ def main() -> None:
         "p": int(p["uurtotaal"]),
     }
 
-    # Idempotent per (local date, hour) rather than per instant. Keying on the
-    # exact timestamp would let a mid-hour test dispatch and the real :59:50 run
-    # both survive as separate rows for the same hour — one of them a partial
-    # count, dragging the hour-of-day average down and double-counting the day.
-    key = (ts[:10], entry["h"])
-    log = [e for e in d.get("hourly", []) if (e["ts"][:10], e["h"]) != key]
+    # Idempotent per hour-instant. Keying on the exact timestamp would let a
+    # mid-hour test dispatch and the real :59:50 run both survive as separate
+    # rows for the same hour — one of them a partial count, dragging the
+    # hour-of-day average down and double-counting the day. Keying on
+    # (local date, hour) collapses those correctly but also collapses the two
+    # 02:00 hours when the clocks go back in October, silently dropping one of
+    # them; the UTC instant of the hour start keeps those apart while still
+    # matching every dispatch made within the same hour.
+    key = hour_key(ts)
+    log = [e for e in d.get("hourly", []) if hour_key(e["ts"]) != key]
     log.append(entry)
     log.sort(key=lambda e: e["ts"])
 

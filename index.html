@@ -432,7 +432,9 @@ fetch('data.json?' + Date.now()).then(r => r.json()).then(d => {
     const k = e.ts.slice(0, 10);
     if (!BY.has(k)) BY.set(k, { hours: Array(24).fill(null), n: 0, p: 0 });
     const c = BY.get(k);
-    c.hours[e.h] = e.n; c.n += e.n; c.p += e.p ?? e.n;
+    // Accumulate rather than assign: on the October clock change a date has two
+    // 02:00 hours, and the log now keeps both. One bar, both hours' bikes.
+    c.hours[e.h] = (c.hours[e.h] ?? 0) + e.n; c.n += e.n; c.p += e.p ?? e.n;
   }
   DAYS = [...BY.keys()].sort();
   for (const k of DAYS) BY.get(k).full = BY.get(k).hours.every(v => v != null);
