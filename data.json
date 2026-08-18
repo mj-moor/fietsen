@@ -1,15 +1,5 @@
 {
- "updated": "2026-08-18T13:32:39+00:00",
- "totals": {
-  "today": 183,
-  "week": 785,
-  "month": 8129
- },
- "hourly": [
-  {
-   "ts": "2026-08-18T13:32:39+00:00",
-   "h": 15,
-   "n": 23
-  }
- ]
+  "updated": null,
+  "totals": { "today": 0, "week": 0, "month": 0 },
+  "hourly": []
 }
