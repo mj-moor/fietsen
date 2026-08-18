@@ -38,9 +38,9 @@ profile and the daily totals from that log.
 
 ## Counting caveat
 
-Detection misses an estimated 17–23% of passes, roughly flat across volume, and
-only the near lane is counted. The published figures are therefore a consistent
-undercount rather than a true total. See
+Detection misses an estimated 17–23% of passes, roughly flat across volume. The
+published figures are therefore a consistent undercount rather than a true
+total. See
 [the write-up](https://www.mjmoor.nl/) for how it is built.
 
 ## Checking and repairing the log
