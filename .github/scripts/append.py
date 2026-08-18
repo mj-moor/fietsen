@@ -71,6 +71,16 @@ def main() -> None:
         "month": today.replace(day=1).isoformat(),
     }
     d["totals"] = {k: since(v) for k, v in spans.items()}
+    # Lifetime figures come straight from the Home Assistant counters rather than
+    # being summed from the log. The log can only ever be a subset: it starts at
+    # 4 Aug 17:00 when hourly statistics began, and any hour whose dispatch fails
+    # is a permanent hole. Taking the counters verbatim means the headline total
+    # always matches Home Assistant, and self-heals after a missed hour.
+    if p.get("totaal") is not None:
+        d["lifetime"] = {
+            "n": int(p.get("totaal_gedetecteerd", p["totaal"])),
+            "p": int(p["totaal"]),
+        }
     # Detected + judged. Kept separate so the file reconciles against the Home
     # Assistant counters, which meter bicycles_passed_total.
     d["totals_incl_judged"] = {k: since(v, "p") for k, v in spans.items()}

@@ -35,8 +35,8 @@
   .hint { color:var(--faint); font-size:.81rem; margin:0 0 .8rem; }
   section { margin-top:2.6rem; }
 
-  .cards { display:grid; gap:.7rem; grid-template-columns:repeat(4,1fr); }
-  @media (max-width:640px) { .cards { grid-template-columns:repeat(2,1fr); } }
+  .cards { display:grid; gap:.7rem; grid-template-columns:repeat(auto-fit,minmax(148px,1fr)); }
+  .card.lead .n { color:var(--accent); }
   .card { background:var(--panel); border:1px solid var(--line); border-radius:11px;
           padding:.9rem 1rem; transition:border-color .12s; }
   .card.q { cursor:help; }
@@ -131,6 +131,8 @@
   <p class="sub">Automatische telling, elk uur bijgewerkt.</p>
 
   <div class="cards">
+    <div class="card q lead" id="k-all"><div class="n" id="t-all">–</div>
+      <div class="l">sinds de start</div><div class="x" id="x-all"></div></div>
     <div class="card q" id="k-today"><div class="n" id="t-today">–</div><div class="l">vandaag</div>
       <div class="x" id="x-today"></div></div>
     <div class="card q" id="k-week"><div class="n" id="t-week">–</div><div class="l">deze week</div>
@@ -183,6 +185,7 @@
 
   <footer>
     <p id="updated"></p>
+    <p id="gap"></p>
     <p>Geteld met een camera en objectherkenning, alleen op de nabije rijbaan.
       De detector mist naar schatting 17–23% van de passages, dus het werkelijke
       aantal ligt hoger. Die ondertelling is constant, waardoor dagen en uren
@@ -421,8 +424,13 @@ fetch('data.json?' + Date.now()).then(r => r.json()).then(d => {
     week:  since(monday(last)),
     month: since(last.slice(0, 8) + '01'),
   };
-  const LBL = { today:'vandaag', week:'deze week', month:'deze maand' };
-  for (const k of ['today', 'week', 'month']) {
+  // Lifetime comes from the Home Assistant counters, not the log: the log starts
+  // at 4 Aug 17:00 and cannot include anything before that, nor an hour whose
+  // dispatch was missed.
+  if (d.lifetime) spans.all = d.lifetime;
+  const LBL = { all:'sinds de start', today:'vandaag', week:'deze week', month:'deze maand' };
+  for (const k of ['all', 'today', 'week', 'month']) {
+    if (!spans[k]) continue;
     const { n, p } = spans[k], judged = p - n;
     // Headline is the full count. The charts stay on `n` alone, because judging
     // is stamped when the button is pressed rather than when the bike passed.
@@ -437,6 +445,17 @@ fetch('data.json?' + Date.now()).then(r => r.json()).then(d => {
     card.addEventListener('pointermove', e => showTip(html, e.clientX,
       card.getBoundingClientRect().top));
     card.addEventListener('pointerleave', hideTip);
+  }
+
+  // The grafieken can only show what the log holds, which is less than the
+  // lifetime counter. Say so rather than leaving the reader to spot it.
+  if (d.lifetime) {
+    const inLog = DAYS.reduce((a, k) => a + BY.get(k).p, 0);
+    const gap = d.lifetime.p - inLog;
+    if (gap > 0) document.getElementById('gap').textContent =
+      `De grafieken beslaan ${NF.format(inLog)} passages vanaf `
+      + `${LONGFMT.format(mid(DAYS[0]))}; de ${NF.format(gap)} daarvoor zijn wel `
+      + `meegeteld in "sinds de start", maar niet per uur vastgelegd.`;
   }
   document.getElementById('t-avg').textContent = fullDays.length
     ? NF.format(Math.round(fullDays.reduce((a, k) => a + BY.get(k).n, 0) / fullDays.length)) : '–';
