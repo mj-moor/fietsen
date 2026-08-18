@@ -520,10 +520,7 @@ fetch('data.json?' + Date.now()).then(r => r.json()).then(d => {
     'De kerncijfers tellen alles mee, de grafieken alleen wat de camera zelf '
   + 'herkende. Een fietser die later handmatig wordt bevestigd, krijgt namelijk '
   + 'het tijdstip van die controle en niet van de passage, en zou het uurpatroon '
-  + 'dus vertekenen.<br>'
-  + 'Op 10 augustus is de herkenning vervangen door een nauwkeuriger model. '
-  + 'Tellingen van voor en na die datum zijn daardoor niet helemaal gelijkwaardig; '
-  + 'de markering in de maandgrafiek geeft dat moment aan.';
+  + 'dus vertekenen.';
 }).catch(e => {
   document.getElementById('updated').textContent = 'Gegevens konden niet geladen worden.';
   console.error(e);
