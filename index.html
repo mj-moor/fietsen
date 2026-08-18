@@ -37,7 +37,10 @@
 
   .cards { display:grid; gap:.7rem; grid-template-columns:repeat(4,1fr); }
   @media (max-width:640px) { .cards { grid-template-columns:repeat(2,1fr); } }
-  .card { background:var(--panel); border:1px solid var(--line); border-radius:11px; padding:.9rem 1rem; }
+  .card { background:var(--panel); border:1px solid var(--line); border-radius:11px;
+          padding:.9rem 1rem; transition:border-color .12s; }
+  .card.q { cursor:help; }
+  .card.q:hover { border-color:var(--accent); }
   .card .n { font-size:1.8rem; font-weight:640; letter-spacing:-.028em; font-variant-numeric:tabular-nums; }
   .card .l { color:var(--dim); font-size:.8rem; margin-top:.05rem; }
   .card .x { color:var(--faint); font-size:.73rem; margin-top:.3rem;
@@ -128,11 +131,11 @@
   <p class="sub">Automatische telling, elk uur bijgewerkt.</p>
 
   <div class="cards">
-    <div class="card"><div class="n" id="t-today">–</div><div class="l">vandaag</div>
+    <div class="card q" id="k-today"><div class="n" id="t-today">–</div><div class="l">vandaag</div>
       <div class="x" id="x-today"></div></div>
-    <div class="card"><div class="n" id="t-week">–</div><div class="l">deze week</div>
+    <div class="card q" id="k-week"><div class="n" id="t-week">–</div><div class="l">deze week</div>
       <div class="x" id="x-week"></div></div>
-    <div class="card"><div class="n" id="t-month">–</div><div class="l">deze maand</div>
+    <div class="card q" id="k-month"><div class="n" id="t-month">–</div><div class="l">deze maand</div>
       <div class="x" id="x-month"></div></div>
     <div class="card"><div class="n" id="t-avg">–</div><div class="l">gem. per hele dag</div></div>
   </div>
@@ -418,11 +421,22 @@ fetch('data.json?' + Date.now()).then(r => r.json()).then(d => {
     week:  since(monday(last)),
     month: since(last.slice(0, 8) + '01'),
   };
+  const LBL = { today:'vandaag', week:'deze week', month:'deze maand' };
   for (const k of ['today', 'week', 'month']) {
-    document.getElementById('t-' + k).textContent = NF.format(spans[k].n);
-    const extra = spans[k].p - spans[k].n;
+    const { n, p } = spans[k], judged = p - n;
+    // Headline is the full count. The charts stay on `n` alone, because judging
+    // is stamped when the button is pressed rather than when the bike passed.
+    document.getElementById('t-' + k).textContent = NF.format(p);
     document.getElementById('x-' + k).textContent =
-      extra > 0 ? '+' + NF.format(extra) + ' handmatig' : '';
+      judged > 0 ? NF.format(n) + ' automatisch' : '';
+    const card = document.getElementById('k-' + k);
+    const html = `<b>${LBL[k]}</b>` +
+      `<span class="v">${NF.format(n)}</span> automatisch herkend<br>` +
+      `<span class="v">${NF.format(judged)}</span> handmatig bevestigd<br>` +
+      `<span class="m">samen ${NF.format(p)}</span>`;
+    card.addEventListener('pointermove', e => showTip(html, e.clientX,
+      card.getBoundingClientRect().top));
+    card.addEventListener('pointerleave', hideTip);
   }
   document.getElementById('t-avg').textContent = fullDays.length
     ? NF.format(Math.round(fullDays.reduce((a, k) => a + BY.get(k).n, 0) / fullDays.length)) : '–';
@@ -450,10 +464,10 @@ fetch('data.json?' + Date.now()).then(r => r.json()).then(d => {
         { dateStyle:'medium', timeStyle:'short' })
     : 'Nog niet bijgewerkt.';
   document.getElementById('caveat').innerHTML =
-    'De grafieken tonen alleen wat de camera zelf herkende. Passages die later '
-  + 'handmatig zijn bevestigd staan apart onder elk totaal, omdat ze worden '
-  + 'geteld op het moment van bevestigen en niet op het moment van passeren — '
-  + 'ze zouden het uurpatroon vertekenen.<br>'
+    'De totalen hierboven tellen alles mee. De grafieken tonen alleen wat de '
+  + 'camera zelf herkende: passages die later '
+  + 'handmatig zijn bevestigd tellen mee op het moment van bevestigen en niet '
+  + 'op het moment van passeren, en zouden het uurpatroon dus vertekenen.<br>'
   + 'De reeks begint op ' + LONGFMT.format(mid(DAYS[0])) + '; de ruim 200 passages '
   + 'daarvoor zitten er niet in.<br>'
   + 'Op 10 augustus is de detector vervangen door een nauwkeuriger model, dus '
