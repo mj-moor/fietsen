@@ -30,8 +30,12 @@ def main() -> None:
     ts = p["ts"]
     entry = {"ts": ts, "h": int(p["uur"]), "n": int(p["uurtotaal"])}
 
-    # Idempotent: a retried dispatch must not double-count the same hour.
-    log = [e for e in d.get("hourly", []) if e["ts"] != ts]
+    # Idempotent per (local date, hour) rather than per instant. Keying on the
+    # exact timestamp would let a mid-hour test dispatch and the real :59:50 run
+    # both survive as separate rows for the same hour — one of them a partial
+    # count, dragging the hour-of-day average down and double-counting the day.
+    key = (ts[:10], entry["h"])
+    log = [e for e in d.get("hourly", []) if (e["ts"][:10], e["h"]) != key]
     log.append(entry)
     log.sort(key=lambda e: e["ts"])
 
