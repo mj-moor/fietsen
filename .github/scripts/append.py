@@ -61,15 +61,19 @@ def main() -> None:
     # because the meters run on bicycles_passed_total (judging included) and the
     # charts run on detected. Taking them from different sources would let the
     # headline cards and the bars disagree on screen.
-    def since(day: str) -> int:
-        return sum(e["n"] for e in log if e["ts"][:10] >= day)
+    def since(day: str, key: str = "n") -> int:
+        return sum(e.get(key, e["n"]) for e in log if e["ts"][:10] >= day)
 
     today = datetime.fromisoformat(ts).date()
-    d["totals"] = {
-        "today": since(today.isoformat()),
-        "week": since((today - timedelta(days=today.weekday())).isoformat()),
-        "month": since(today.replace(day=1).isoformat()),
+    spans = {
+        "today": today.isoformat(),
+        "week": (today - timedelta(days=today.weekday())).isoformat(),
+        "month": today.replace(day=1).isoformat(),
     }
+    d["totals"] = {k: since(v) for k, v in spans.items()}
+    # Detected + judged. Kept separate so the file reconciles against the Home
+    # Assistant counters, which meter bicycles_passed_total.
+    d["totals_incl_judged"] = {k: since(v, "p") for k, v in spans.items()}
 
     DATA.write_text(json.dumps(d, indent=1, ensure_ascii=False) + "\n")
     print(f"appended {ts} h={entry['h']} n={entry['n']} ({len(log)} rows retained)")

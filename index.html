@@ -40,6 +40,8 @@
   .card { background:var(--panel); border:1px solid var(--line); border-radius:11px; padding:.9rem 1rem; }
   .card .n { font-size:1.8rem; font-weight:640; letter-spacing:-.028em; font-variant-numeric:tabular-nums; }
   .card .l { color:var(--dim); font-size:.8rem; margin-top:.05rem; }
+  .card .x { color:var(--faint); font-size:.73rem; margin-top:.3rem;
+             font-variant-numeric:tabular-nums; min-height:1em; }
 
   .bar-controls { display:flex; flex-wrap:wrap; gap:.6rem; align-items:center;
                   margin:0 0 .9rem; }
@@ -126,9 +128,12 @@
   <p class="sub">Automatische telling, elk uur bijgewerkt.</p>
 
   <div class="cards">
-    <div class="card"><div class="n" id="t-today">–</div><div class="l">vandaag</div></div>
-    <div class="card"><div class="n" id="t-week">–</div><div class="l">deze week</div></div>
-    <div class="card"><div class="n" id="t-month">–</div><div class="l">deze maand</div></div>
+    <div class="card"><div class="n" id="t-today">–</div><div class="l">vandaag</div>
+      <div class="x" id="x-today"></div></div>
+    <div class="card"><div class="n" id="t-week">–</div><div class="l">deze week</div>
+      <div class="x" id="x-week"></div></div>
+    <div class="card"><div class="n" id="t-month">–</div><div class="l">deze maand</div>
+      <div class="x" id="x-month"></div></div>
     <div class="card"><div class="n" id="t-avg">–</div><div class="l">gem. per hele dag</div></div>
   </div>
 
@@ -405,8 +410,20 @@ fetch('data.json?' + Date.now()).then(r => r.json()).then(d => {
              q1:q(.25), med:q(.5), q3:q(.75) };
   });
 
-  for (const [k, id] of [['today','t-today'], ['week','t-week'], ['month','t-month']])
-    document.getElementById(id).textContent = NF.format(d.totals?.[k] ?? 0);
+  const last = DAYS[DAYS.length - 1];
+  const since = from => DAYS.filter(k => k >= from)
+    .reduce((a, k) => ({ n: a.n + BY.get(k).n, p: a.p + BY.get(k).p }), { n:0, p:0 });
+  const spans = {
+    today: since(last),
+    week:  since(monday(last)),
+    month: since(last.slice(0, 8) + '01'),
+  };
+  for (const k of ['today', 'week', 'month']) {
+    document.getElementById('t-' + k).textContent = NF.format(spans[k].n);
+    const extra = spans[k].p - spans[k].n;
+    document.getElementById('x-' + k).textContent =
+      extra > 0 ? '+' + NF.format(extra) + ' handmatig' : '';
+  }
   document.getElementById('t-avg').textContent = fullDays.length
     ? NF.format(Math.round(fullDays.reduce((a, k) => a + BY.get(k).n, 0) / fullDays.length)) : '–';
 
@@ -432,10 +449,16 @@ fetch('data.json?' + Date.now()).then(r => r.json()).then(d => {
     ? 'Laatst bijgewerkt: ' + new Date(d.updated).toLocaleString('nl-NL',
         { dateStyle:'medium', timeStyle:'short' })
     : 'Nog niet bijgewerkt.';
-  document.getElementById('caveat').textContent =
-    'De detector is op 10 augustus vervangen door een nauwkeuriger model. '
-  + 'Tellingen van voor en na die datum zijn daardoor niet helemaal gelijkwaardig; '
-  + 'de markering in de dagengrafiek geeft het moment aan.';
+  document.getElementById('caveat').innerHTML =
+    'De grafieken tonen alleen wat de camera zelf herkende. Passages die later '
+  + 'handmatig zijn bevestigd staan apart onder elk totaal, omdat ze worden '
+  + 'geteld op het moment van bevestigen en niet op het moment van passeren — '
+  + 'ze zouden het uurpatroon vertekenen.<br>'
+  + 'De reeks begint op ' + LONGFMT.format(mid(DAYS[0])) + '; de ruim 200 passages '
+  + 'daarvoor zitten er niet in.<br>'
+  + 'Op 10 augustus is de detector vervangen door een nauwkeuriger model, dus '
+  + 'tellingen van voor en na die datum zijn niet helemaal gelijkwaardig; de '
+  + 'markering in de maandgrafiek geeft dat moment aan.';
 }).catch(e => {
   document.getElementById('updated').textContent = 'Gegevens konden niet geladen worden.';
   console.error(e);
