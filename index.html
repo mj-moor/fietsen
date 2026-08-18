@@ -194,10 +194,10 @@
   <footer>
     <h2>Over de telling</h2>
     <p>De camera telt fietsers die hier langsrijden. Beelden die niet automatisch
-      herkend worden, controleer ik handmatig.</p>
-    <p>Alleen de dichtstbijzijnde rijbaan wordt geteld en de camera mist naar schatting
-      17–23% van de passages, dus in werkelijkheid rijden er meer. Dat verschil is elke
-      dag ongeveer even groot, waardoor dagen en uren onderling goed vergelijkbaar blijven.</p>
+      herkend worden, worden handmatig gecontroleerd.</p>
+    <p>De camera mist naar schatting 17–23% van de passages, dus in werkelijkheid
+      rijden er meer. Dat verschil is elke dag ongeveer even groot, waardoor dagen
+      en uren onderling goed vergelijkbaar blijven.</p>
     <p id="gap"></p>
     <p id="caveat"></p>
     <p id="updated"></p>
@@ -530,10 +530,10 @@ fetch('data.json?' + Date.now()).then(r => r.json()).then(d => {
     : 'Nog niet bijgewerkt.';
   document.getElementById('caveat').innerHTML =
     'De kerncijfers tellen alles mee, de grafieken alleen wat de camera zelf '
-  + 'herkende. Een fietser die ik later handmatig bevestig, krijgt namelijk het '
-  + 'tijdstip van die controle en niet van de passage, en zou het uurpatroon dus '
-  + 'vertekenen.<br>'
-  + 'Op 10 augustus heb ik de herkenning vervangen door een nauwkeuriger model. '
+  + 'herkende. Een fietser die later handmatig wordt bevestigd, krijgt namelijk '
+  + 'het tijdstip van die controle en niet van de passage, en zou het uurpatroon '
+  + 'dus vertekenen.<br>'
+  + 'Op 10 augustus is de herkenning vervangen door een nauwkeuriger model. '
   + 'Tellingen van voor en na die datum zijn daardoor niet helemaal gelijkwaardig; '
   + 'de markering in de maandgrafiek geeft dat moment aan.';
 }).catch(e => {
