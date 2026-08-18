@@ -43,6 +43,18 @@ published figures are therefore a consistent undercount rather than a true
 total. See
 [the write-up](https://www.mjmoor.nl/) for how it is built.
 
+## Link previews
+
+`og.png` is the card WhatsApp, Signal and Slack show when the link is pasted.
+It has to be a real image at an absolute URL: the favicon is an inline SVG data
+URI, which none of them will render. `scripts/og-card.html` is its source —
+screenshot that page at exactly 1200x630 and save the result as `og.png` in the
+repository root. The bars are the median count per hour at the time of
+generation.
+
+Chat apps cache a preview per URL for days, so a change to the card or the
+tags will not show up in an existing conversation right away.
+
 ## Checking and repairing the log
 
 Home Assistant is the record of what happened; `data.json` is a copy that can
