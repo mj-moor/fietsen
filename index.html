@@ -97,8 +97,6 @@
   .rng { fill:var(--band); opacity:.08; }
   .med { fill:none; stroke:var(--accent); stroke-width:2.2; stroke-linejoin:round; }
   .dot { fill:var(--accent); }
-  .mark { stroke:var(--faint); stroke-width:1; stroke-dasharray:2 3; }
-  .mark-t { fill:var(--faint); font-size:10px; }
   .empty { color:var(--dim); font-size:.9rem; padding:2.5rem 0; text-align:center; }
 
   .cell { stroke:var(--panel); stroke-width:1.5; }
@@ -292,15 +290,6 @@ function barChart(host, rows, opts = {}) {
     const step = f.plotW / rows.length;
     const bw = Math.max(2, Math.min(step - 3, 46));
 
-    if (opts.mark) {
-      const i = rows.findIndex(r => r.key === opts.mark.key);
-      if (i > 0) {
-        const x = f.padL + step * i;
-        f.svg.appendChild(el('line', { class:'mark', x1:x, x2:x, y1:f.padT, y2:f.padT + f.plotH }));
-        const t = el('text', { class:'mark-t', x:x + 4, y:f.padT + 10 });
-        t.textContent = opts.mark.text; f.svg.appendChild(t);
-      }
-    }
 
     rows.forEach((r, i) => {
       const cx = f.padL + step * i + step / 2, yv = f.y(r.v), h = f.padT + f.plotH - yv;
@@ -608,8 +597,7 @@ function render() {
     });
     opts = { label: (r, i) => rows.length > 16 && i % 3 ? '' :
                DAYFMT.format(mid(r.key)).replace(/^\w+\.? /, '').replace('.', ''),
-             height: 220,
-             mark: state.mode === 'month' ? { key:'2026-08-10', text:'nieuw model' } : null };
+             height: 220 };
     ghostLg.hidden = true;
   }
 
