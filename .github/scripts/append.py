@@ -87,7 +87,24 @@ def main() -> None:
     if {"dag", "week", "maand"} <= incl.keys():
         d["totals_incl_judged"] = spans(incl)
     if {"dag", "week", "maand"} <= det.keys():
-        d["totals"] = spans(det)
+        # The detector-only meters were created on 18 Aug, so for their first
+        # cycle they report far less than actually happened and would make the
+        # split read "2 automatisch, 307 handmatig". Both the meter and the log
+        # sum are undercounts of the same quantity — the meter because it started
+        # late, the log because it starts 4 Aug 17:00 and drops failed hours — so
+        # take whichever is larger. The meters win once they have run a full
+        # cycle (daily from 19 Aug, weekly from Mon, monthly from 1 Sep) and this
+        # becomes a no-op.
+        def logged(since: str) -> int:
+            return sum(e["n"] for e in log if e["ts"][:10] >= since)
+
+        today = datetime.fromisoformat(ts).date()
+        floors = {
+            "today": logged(today.isoformat()),
+            "week": logged((today - timedelta(days=today.weekday())).isoformat()),
+            "month": logged(today.replace(day=1).isoformat()),
+        }
+        d["totals"] = {k: max(v, floors[k]) for k, v in spans(det).items()}
     if "totaal" in incl:
         d["lifetime"] = {"n": det.get("totaal", incl["totaal"]), "p": incl["totaal"]}
 
