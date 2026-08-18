@@ -120,6 +120,7 @@
     box-shadow:var(--shadow); white-space:nowrap;
   }
   #tip.on { opacity:1; }
+  @media (max-width:520px) { #tip { white-space:normal; max-width:calc(100vw - 24px); } }
   #tip b { display:block; font-size:.71rem; text-transform:uppercase; letter-spacing:.06em;
            color:var(--dim); font-weight:600; margin-bottom:.22rem; }
   #tip .v { font-variant-numeric:tabular-nums; font-weight:600; }
@@ -221,13 +222,36 @@ const addD = (k, n) => { const d = mid(k); d.setDate(d.getDate() + n); return is
 const isWE = k => [0, 6].includes(mid(k).getDay());
 const monday = k => addD(k, -((mid(k).getDay() + 6) % 7));
 
+// A phone has no hover: pointermove alone never fires for a plain tap, and the
+// pointerleave that follows a lift would wipe the box before it could be read.
+// So every tooltip is bound to pointerdown as well (via onTip), a touch-opened
+// box ignores the leave and closes on the next tap or after a few seconds, and
+// the tap that closes it does so in the capture phase — early enough for a tap
+// on another target to reopen it in the same gesture.
+let touchMode = false, tipTimer = 0;
+addEventListener('pointerdown', e => {
+  touchMode = e.pointerType === 'touch';
+  if (touchMode) { clearTimeout(tipTimer); tip.classList.remove('on'); }
+}, true);
+// A real mouse moving over the page puts hover behaviour back, for the laptop
+// that has both.
+addEventListener('pointermove', e => { if (e.pointerType === 'mouse') touchMode = false; }, true);
+
 function showTip(html, x, y) {
   tip.innerHTML = html; tip.classList.add('on');
   const r = tip.getBoundingClientRect();
   tip.style.left = Math.max(8, Math.min(x - r.width / 2, innerWidth - r.width - 8)) + 'px';
   tip.style.top  = (y - r.height - 12 < 8 ? y + 18 : y - r.height - 12) + 'px';
+  if (touchMode) {
+    clearTimeout(tipTimer);
+    tipTimer = setTimeout(() => tip.classList.remove('on'), 5000);
+  }
 }
-const hideTip = () => tip.classList.remove('on');
+const hideTip = () => { if (!touchMode) tip.classList.remove('on'); };
+const onTip = (el, handler) => {
+  el.addEventListener('pointermove', handler);
+  el.addEventListener('pointerdown', handler);
+};
 
 // Gridlines land on round numbers instead of wherever the max happens to fall.
 function niceMax(v) {
@@ -284,7 +308,7 @@ function barChart(host, rows, opts = {}) {
       const hit = el('rect', { class:'hit', x:f.padL + step * i, y:f.padT, width:step, height:f.plotH });
       hit.addEventListener('pointerenter', () => g.classList.add('on'));
       hit.addEventListener('pointerleave', () => { g.classList.remove('on'); hideTip(); });
-      hit.addEventListener('pointermove', e => showTip(r.tip, e.clientX,
+      onTip(hit, e => showTip(r.tip, e.clientX,
         host.getBoundingClientRect().top + yv));
       if (r.onClick) { hit.style.cursor = 'pointer'; hit.addEventListener('click', r.onClick); }
       g.appendChild(hit);
@@ -331,7 +355,7 @@ function bandChart(host, stats, opts = {}) {
       const hit = el('rect', { class:'hit', x:f.padL + step * i, y:f.padT, width:step, height:f.plotH });
       hit.addEventListener('pointerenter', () => g.classList.add('on'));
       hit.addEventListener('pointerleave', () => { g.classList.remove('on'); hideTip(); });
-      hit.addEventListener('pointermove', e => showTip(
+      onTip(hit, e => showTip(
         `<b>${String(s.h).padStart(2,'0')}:00 – ${String((s.h+1)%24).padStart(2,'0')}:00</b>` +
         `mediaan <span class="v">${s.med}</span> fietsen<br>` +
         `<span class="m">meestal ${s.q1}–${s.q3} · uitschieters ${s.min}–${s.max}</span><br>` +
@@ -403,7 +427,7 @@ function heatmap(host, days, byDay, onPick) {
           'fill-opacity': v == null ? .4 : (v > 0 ? .08 + .92 * Math.sqrt(v / peak) : .05) });
         cell.addEventListener('pointerenter', () => cell.classList.add('on'));
         cell.addEventListener('pointerleave', () => { cell.classList.remove('on'); hideTip(); });
-        cell.addEventListener('pointermove', e => showTip(
+        onTip(cell, e => showTip(
           `<b>${LONGFMT.format(mid(k))} · ${String(h).padStart(2,'0')}:00</b>` +
           (v == null ? '<span class="m">niet gemeten</span>'
                      : `<span class="v">${v}</span> fietsen`),
@@ -472,8 +496,7 @@ fetch('data.json?' + Date.now()).then(r => r.json()).then(d => {
       `<span class="v">${NF.format(n)}</span> automatisch herkend<br>` +
       `<span class="v">${NF.format(judged)}</span> handmatig bevestigd<br>` +
       `<span class="m">samen ${NF.format(p)}</span>`;
-    card.addEventListener('pointermove', e => showTip(html, e.clientX,
-      card.getBoundingClientRect().top));
+    onTip(card, e => showTip(html, e.clientX, card.getBoundingClientRect().top));
     card.addEventListener('pointerleave', hideTip);
   }
 
@@ -484,7 +507,7 @@ fetch('data.json?' + Date.now()).then(r => r.json()).then(d => {
     ? `Alle getelde fietsers sinds ${FULLFMT.format(mid(DAYS[0]))}.`
     : 'Alle getelde fietsers sinds de start van de telling.';
   const atIcon = () => iAll.getBoundingClientRect();
-  iAll.addEventListener('pointermove', e => {
+  onTip(iAll, e => {
     e.stopPropagation(); showTip(since, e.clientX, atIcon().top);
   });
   iAll.addEventListener('pointerleave', hideTip);
