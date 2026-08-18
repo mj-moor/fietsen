@@ -34,6 +34,7 @@
        color:var(--dim); font-weight:600; margin:0 0 .2rem; }
   .hint { color:var(--faint); font-size:.81rem; margin:0 0 .8rem; }
   section { margin-top:2.6rem; }
+  section.kpi { margin-top:0; }
 
   .cards { display:grid; gap:.7rem; grid-template-columns:repeat(auto-fit,minmax(148px,1fr)); }
   .card.lead .n { color:var(--accent); }
@@ -136,19 +137,22 @@
   <h1>Fietsen op het Gouwplein</h1>
   <p class="sub">Automatisch geteld &middot; elk uur bijgewerkt</p>
 
-  <div class="cards">
-    <div class="card q lead" id="k-all"><div class="n" id="t-all">–</div>
-      <div class="l">Sinds de start<button type="button" class="info" id="i-all"
-        aria-label="Wat telt mee bij sinds de start?">?</button></div>
-      <div class="x" id="x-all"></div></div>
-    <div class="card q" id="k-today"><div class="n" id="t-today">–</div><div class="l">Vandaag</div>
-      <div class="x" id="x-today"></div></div>
-    <div class="card q" id="k-week"><div class="n" id="t-week">–</div><div class="l">Deze week</div>
-      <div class="x" id="x-week"></div></div>
-    <div class="card q" id="k-month"><div class="n" id="t-month">–</div><div class="l">Deze maand</div>
-      <div class="x" id="x-month"></div></div>
-    <div class="card"><div class="n" id="t-avg">–</div><div class="l">Gemiddeld per dag</div></div>
-  </div>
+  <section class="kpi">
+    <h2>Kerncijfers</h2>
+    <div class="cards">
+      <div class="card q lead" id="k-all"><div class="n" id="t-all">–</div>
+        <div class="l">Sinds de start<button type="button" class="info" id="i-all"
+          aria-label="Wat telt mee bij sinds de start?">?</button></div>
+        <div class="x" id="x-all"></div></div>
+      <div class="card q" id="k-today"><div class="n" id="t-today">–</div><div class="l">Vandaag</div>
+        <div class="x" id="x-today"></div></div>
+      <div class="card q" id="k-week"><div class="n" id="t-week">–</div><div class="l">Deze week</div>
+        <div class="x" id="x-week"></div></div>
+      <div class="card q" id="k-month"><div class="n" id="t-month">–</div><div class="l">Deze maand</div>
+        <div class="x" id="x-month"></div></div>
+      <div class="card"><div class="n" id="t-avg">–</div><div class="l">Gemiddeld per dag</div></div>
+    </div>
+  </section>
 
   <section>
     <div class="bar-controls">
