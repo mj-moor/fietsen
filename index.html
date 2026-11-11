@@ -92,6 +92,8 @@
     color-scheme:dark;
   }
   @media (prefers-color-scheme: light) { input[type=date] { color-scheme:light; } }
+  .range { display:inline-flex; flex-wrap:wrap; align-items:center; gap:.4rem;
+           color:var(--dim); font-size:.85rem; }
 
   .chart { background:var(--panel); border:1px solid var(--line); border-radius:11px;
            padding:1rem .9rem .55rem; }
@@ -197,6 +199,17 @@
   <section>
     <h2>Alle dagen, uur voor uur</h2>
     <p class="hint">Klik op een dag voor details.</p>
+    <div class="bar-controls">
+      <div class="seg" id="hm-seg">
+        <button data-n="14">14 dagen</button>
+        <button data-n="30">30 dagen</button>
+        <button data-n="0">Alles</button>
+      </div>
+      <div class="range">
+        van <input type="date" id="hm-from" aria-label="vanaf datum">
+        tot <input type="date" id="hm-to" aria-label="tot en met datum">
+      </div>
+    </div>
     <div class="chart" id="c-heat"></div>
     <div class="legend">
       <span>minder
@@ -403,8 +416,9 @@ function bandChart(host, stats, opts = {}) {
 }
 
 /* Day x hour heatmap. sqrt scaling, or quiet hours vanish next to the 16:00 peak. */
-function heatmap(host, days, byDay, onPick) {
+function heatmap(host, days, byDay, onPick, peakAll) {
   const draw = () => {
+    if (!days.length) { host.innerHTML = '<div class="empty">Geen gegevens voor deze periode.</div>'; return; }
     host.innerHTML = '';
     const W = host.clientWidth || 600;
     const padT = 16, padB = 4, rowH = 17, gap = 2;
@@ -431,7 +445,9 @@ function heatmap(host, days, byDay, onPick) {
     ruler.remove();
 
     const cw = (W - padL - 6) / 24;
-    const peak = Math.max(...days.flatMap(k => (byDay.get(k).hours).map(v => v ?? 0)), 1);
+    // Shade against the peak over ALL days, so a cell keeps its colour whichever
+    // range is selected and two ranges stay comparable.
+    const peak = peakAll ?? Math.max(...days.flatMap(k => (byDay.get(k).hours).map(v => v ?? 0)), 1);
 
     for (let h = 0; h < 24; h += 3) {
       const t = el('text', { class:'hm-lbl', x:padL + cw * h + cw / 2, y:11, 'text-anchor':'middle' });
@@ -556,8 +572,7 @@ fetch('data.json?' + Date.now()).then(r => r.json()).then(d => {
   document.getElementById('next').addEventListener('click', () => shift(1));
 
   state.anchor = DAYS[DAYS.length - 1];
-  heatmap(document.getElementById('c-heat'), DAYS, BY,
-          k => { state.mode = 'day'; state.anchor = k; render(); });
+  setupHeat();
   bandChart(document.getElementById('c-hour'), HOURS);
   buildScale();
   render();
@@ -575,6 +590,51 @@ fetch('data.json?' + Date.now()).then(r => r.json()).then(d => {
   document.getElementById('updated').textContent = 'Gegevens konden niet geladen worden.';
   console.error(e);
 });
+
+/* The heatmap grows a row per day, so it shows a date range — the last 30 days
+   by default — instead of everything since the start. */
+const heat = { from: null, to: null };
+let HEAT_PEAK = 1;
+function setupHeat() {
+  if (!DAYS.length) return;
+  HEAT_PEAK = Math.max(...DAYS.flatMap(k => BY.get(k).hours.map(v => v ?? 0)), 1);
+  const first = DAYS[0], last = DAYS[DAYS.length - 1];
+  const from = document.getElementById('hm-from'), to = document.getElementById('hm-to');
+  for (const i of [from, to]) { i.min = first; i.max = last; }
+  const preset = n => {
+    heat.to = last;
+    heat.from = n ? (addD(last, -(n - 1)) < first ? first : addD(last, -(n - 1))) : first;
+    renderHeat();
+  };
+  document.getElementById('hm-seg').addEventListener('click', e => {
+    const b = e.target.closest('button'); if (b) preset(+b.dataset.n);
+  });
+  const onDate = () => {
+    if (!from.value || !to.value) return;
+    // A swapped range is read the way it was obviously meant.
+    [heat.from, heat.to] = from.value <= to.value ? [from.value, to.value] : [to.value, from.value];
+    renderHeat();
+  };
+  from.addEventListener('change', onDate);
+  to.addEventListener('change', onDate);
+  preset(30);
+}
+function renderHeat() {
+  const first = DAYS[0], last = DAYS[DAYS.length - 1];
+  document.getElementById('hm-from').value = heat.from;
+  document.getElementById('hm-to').value = heat.to;
+  // Light at most one preset: with little data "30 dagen" and "Alles" coincide.
+  let lit = false;
+  for (const b of document.querySelectorAll('#hm-seg button')) {
+    const n = +b.dataset.n;
+    const f = n ? (addD(last, -(n - 1)) < first ? first : addD(last, -(n - 1))) : first;
+    const on = !lit && heat.to === last && heat.from === f;
+    b.setAttribute('aria-pressed', on); lit ||= on;
+  }
+  heatmap(document.getElementById('c-heat'),
+          DAYS.filter(k => k >= heat.from && k <= heat.to), BY,
+          k => { state.mode = 'day'; state.anchor = k; render(); }, HEAT_PEAK);
+}
 
 function buildScale() {
   const s = document.getElementById('hm-scale');
